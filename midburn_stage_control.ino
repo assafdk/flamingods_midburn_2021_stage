@@ -29,13 +29,17 @@ state_t cur_state, prev_state;
 // -- constants --
 #define BUTTON_DELAY_MS  50      // push button debouncibg delay in millisec
 
-#define SHOW_WHITE_LIGHTS_TIME 2000
-#define SHOW_COLOR_LIGHTS_TIME 4000
-#define SHOW_SONG_PLAY_TIME    5000
-#define SHOW_SMOKE_TIME        10000
-#define SHOW_SMOKE_DURATION    4000
-#define SHOW_BUBBLE_REPEAT_TIME 40000
-#define SHOW_BUBBLE_DURATION    10000
+#define SHOW_COLOR_LIGHTS_1_TIME  500
+#define SHOW_COLOR_LIGHTS_2_TIME  1000
+#define SHOW_WHITE_LIGHTS_TIME    1500
+#define SHOW_SONG_PLAY_TIME       1500
+#define SHOW_BUBBLE_TIME          2000
+#define SHOW_SMOKE_TIME           2000
+
+#define SHOW_SMOKE_DURATION       4000
+#define SHOW_SMOKE_REPEAT_TIME    40000
+
+//#define SHOW_BUBBLE_DURATION    10000
 #define SHOW_TIMEOUT_MS         (60000*6) // 6 minutes
 
 #define EASTER_ENABLE_TIME        (SHOW_SONG_PLAY_TIME)
@@ -43,22 +47,27 @@ state_t cur_state, prev_state;
 #define EASTER_FLICKERS_DURATION  15000 
 #define EASTER_TIMEOUT_MS         (EASTER_SMOKE_DURATION + EASTER_FLICKERS_DURATION)
 
-// pins definition
-#define WHITE_LIGHTS    2
-#define COLOR_LIGHTS    3
-#define BUBBLE_MACHINE  4
-#define SMOKE_MACHINE   5
-#define FLICKERS        6
+//// pins definition MEGA
+//#define WHITE_LIGHTS    41
+//#define COLOR_LIGHTS    43
+//#define BUBBLE_MACHINE  45
+//#define SMOKE_MACHINE   47
+//#define FLICKERS        39
 
-
-
-
+// pins definition UNO
+#define WHITE_LIGHTS    8
+#define COLOR_LIGHTS_1  9
+#define COLOR_LIGHTS_2  7
+#define BUBBLE_MACHINE  10
+#define SMOKE_MACHINE   11
+#define FLICKERS        12
 
 #define SERIAL_PLAY_SONG  'P' // Play
 #define SERIAL_STOP_SONG  'S' // Stop
-#define SERIAL_CLAP_FX    'C' // Clapping effect
-#define SERIAL_DRUMS_FX   'D' // Drums effect
-#define SERIAL_WOW_FX     'E' // Vocal wow effect for easter
+//#define SERIAL_CLAP_FX    'C' // Clapping effect
+//#define SERIAL_DRUMS_FX   'D' // Drums effect
+#define SERIAL_VOCAL_WOW_FX     'V' // Vocal wow effect for easter
+#define SERIAL_ZOTI_WOW_FX     'Z' // Vocal wow effect for easter
 
 #define ON  HIGH
 #define OFF LOW
@@ -100,7 +109,8 @@ unsigned long lastEventCheckTime; // capturing the absolute time when event was 
 bool smokeMachineON = false;
 bool bubbleMachineON = false;
 bool whiteLightsON = false;
-bool colorLightsON = false;
+bool colorLights_1_ON = false;
+bool colorLights_2_ON = false;
 bool songPlaying = false;
 bool flickersON = false;
 
@@ -120,14 +130,15 @@ func_ptr_t ledPlan;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600); // open the serial port at 9600 bps
-  DEBUG_PRINTLN("Started...");
+  DEBUG_PRINTLN("DEBUG MODE");
 
   // input pin
   pinMode(PUSH_BTN_PIN, INPUT_PULLUP);
 
   // relay output pins
   pinMode(WHITE_LIGHTS, OUTPUT);
-  pinMode(COLOR_LIGHTS, OUTPUT);
+  pinMode(COLOR_LIGHTS_1, OUTPUT);
+  pinMode(COLOR_LIGHTS_2, OUTPUT);
   pinMode(BUBBLE_MACHINE, OUTPUT);
   pinMode(SMOKE_MACHINE, OUTPUT);
   pinMode(FLICKERS, OUTPUT);
@@ -136,7 +147,7 @@ void setup() {
   lastEventCheckTime = millis();
 
   // setup LEDs
-  led_setup();        // init led stuff
+  //led_setup();        // init led stuff
   ledPlan = runway;  // choose first LED plan
 }
 
@@ -166,7 +177,7 @@ void loop() {
   }
   
   // LED handling
-  led_run(ledPlan);
+  //led_run(ledPlan);
   
   // state handling
   switch (cur_state)
@@ -206,9 +217,6 @@ bool showSetupFlag = false;
 void show_setup() {
   ledPlan = confetti;
   DEBUG_PRINTLN("show_setup()");
-  //flashLEDs();
-  //Serial.print(SERIAL_STOP_SONG);
-  DEBUG_PRINTLN("SHOW SETUP - STOP SONG");
   showSetupFlag = true;
   showTime = 0;
   showStartTime = millis();
@@ -217,43 +225,49 @@ void show_setup() {
 
 void show_state()
 {
-  //DEBUG_PRINTLN("show_state()");
   showTime = now-showStartTime;
    
   if (true == showSetupFlag) {
+    // Color 1
+    if ((false == colorLights_1_ON) && (showTime > SHOW_COLOR_LIGHTS_1_TIME)) {
+        DEBUG_PRINTLN("SHOW - color lights 1 ON");
+        relayToggle(COLOR_LIGHTS_1,ON);}
+    // Color 2
+    if ((false == colorLights_2_ON) && (showTime > SHOW_COLOR_LIGHTS_2_TIME)) {
+        DEBUG_PRINTLN("SHOW - color lights 2 ON");
+        relayToggle(COLOR_LIGHTS_2,ON);}    
+    // White lights
     if ((false == whiteLightsON) && (showTime > SHOW_WHITE_LIGHTS_TIME)) {
         DEBUG_PRINTLN("SHOW - white lights ON");
         relayToggle(WHITE_LIGHTS,ON);}
-    if ((false == colorLightsON) && (showTime > SHOW_COLOR_LIGHTS_TIME)) {
-        DEBUG_PRINTLN("SHOW - color lights ON");
-        relayToggle(COLOR_LIGHTS,ON);}
+    // Play song
     if ((false == songPlaying) && (showTime > SHOW_SONG_PLAY_TIME)) {
         DEBUG_PRINTLN("SHOW - play song");
         Serial.print(SERIAL_PLAY_SONG);
         songPlaying = true;}
+    // Bubbles
+    if ((false == bubbleMachineON) && (showTime > SHOW_BUBBLE_TIME)) {
+        DEBUG_PRINTLN("SHOW - bubbules ON");
+        relayToggle(BUBBLE_MACHINE,ON);}
+    
+    // Smoke
     if ((false == smokeMachineON) && (showTime > SHOW_SMOKE_TIME)) {
         DEBUG_PRINTLN("SHOW - smoke ON");
         relayToggle(SMOKE_MACHINE,ON);
         lastSmokeTime = showTime;}
-    
+
     // exit setup when everything is ON
-    if (whiteLightsON && colorLightsON && songPlaying && smokeMachineON) {
+    if (whiteLightsON && colorLights_1_ON && colorLights_2_ON && songPlaying && smokeMachineON && bubbleMachineON) {
         DEBUG_PRINTLN("end show setup");
         showSetupFlag = false; }
   }
 
-  // bubble machine control
-  // bubbles ON
-  if ((showTime - lastBubbleTime > SHOW_BUBBLE_REPEAT_TIME) && (false == bubbleMachineON)) {
-      DEBUG_PRINTLN("SHOW - bubbules ON");
-      relayToggle(BUBBLE_MACHINE,ON);
-      lastBubbleTime = showTime; }
-
-  // bubbles OFF
-  if (true == bubbleMachineON && (showTime-lastBubbleTime > SHOW_BUBBLE_DURATION)) {
-      DEBUG_PRINTLN("SHOW - bubbles OFF");
-      relayToggle(BUBBLE_MACHINE,OFF);
-  }
+  // smoke machine control
+  // smoke ON
+  if ((showTime - lastSmokeTime > SHOW_SMOKE_REPEAT_TIME) && (false == smokeMachineON)) {
+      DEBUG_PRINTLN("SHOW - smoke ON");
+      relayToggle(SMOKE_MACHINE,ON);
+      lastSmokeTime = showTime; }
 
   // smoke machine control
   if (true == smokeMachineON && (showTime-lastSmokeTime > SHOW_SMOKE_DURATION)) {
@@ -270,7 +284,8 @@ void easter_setup() {
   DEBUG_PRINTLN("easter_setup()");
   easterStartTime = now;
   relayToggle(WHITE_LIGHTS,OFF);
-  relayToggle(COLOR_LIGHTS,OFF);
+  relayToggle(COLOR_LIGHTS_1,OFF);
+  relayToggle(COLOR_LIGHTS_2,OFF);
   return;
 }
 
@@ -281,26 +296,31 @@ void easter_state()
 
   // SHORT TAP
   if ((true == easterShortFlag)) {
+     DEBUG_PRINTLN("easter SHORT_TAP");
      easterShortFlag = false;
      ledPlan = rainbow;
+     Serial.print(SERIAL_VOCAL_WOW_FX);
      relayToggle(SMOKE_MACHINE,ON);  // turn smoke on for a few seconds
      }
   
   // SHORT TAP end - turn smoke off after a few seconds
   if ((now - smokeStartTime > EASTER_SMOKE_DURATION) && (true == smokeMachineON)) {
-      relayToggle(SMOKE_MACHINE,OFF); }
+      relayToggle(SMOKE_MACHINE,OFF);}
          
   // LONG TAP
   if ((true == easterLongFlag) && (false == flickersON)) {
+     DEBUG_PRINTLN("easter LONG_TAP");
      easterLongFlag = false;
      ledPlan = juggle;
+     Serial.print(SERIAL_ZOTI_WOW_FX);
      relayToggle(FLICKERS,ON); }
 
   // CONT TAP
   if (true == easterContFlag) {
+     DEBUG_PRINTLN("easter CONT_TAP");
      easterContFlag = false;
      ledPlan = bpm;
-     Serial.print(SERIAL_WOW_FX);
+     Serial.print(SERIAL_ZOTI_WOW_FX);
      }
 
   return;
@@ -402,6 +422,8 @@ event_t getEvent()
   // Button event:
   btnEvent = btnPushSense();
   if (NO_EVENT != btnEvent) {
+    DEBUG_PRINT("BUTTON EVENT: ");
+    DEBUG_PRINTLN(btnEvent);
     return btnEvent;
   }
 
@@ -440,7 +462,8 @@ void turnAllRelaysOff() {
   relayToggle(BUBBLE_MACHINE,OFF);
   relayToggle(FLICKERS,OFF);
   relayToggle(WHITE_LIGHTS,OFF);
-  relayToggle(COLOR_LIGHTS,OFF);
+  relayToggle(COLOR_LIGHTS_1,OFF);
+  relayToggle(COLOR_LIGHTS_2,OFF);
 }
 
 
@@ -464,10 +487,15 @@ void relayToggle(int pin_number,int desiredOutput) {
       DEBUG_PRINT("RELAY - WHITE_LIGHTS: ");
       DEBUG_PRINTLN(whiteLightsON);
       break;
-    case COLOR_LIGHTS:
-      colorLightsON = (HIGH == desiredOutput);
-      DEBUG_PRINT("RELAY - COLOR_LIGHTS: ");
-      DEBUG_PRINTLN(colorLightsON);
+    case COLOR_LIGHTS_1:
+      colorLights_1_ON = (HIGH == desiredOutput);
+      DEBUG_PRINT("RELAY - COLOR_LIGHTS_1: ");
+      DEBUG_PRINTLN(colorLights_1_ON);
+      break;
+    case COLOR_LIGHTS_2:
+      colorLights_2_ON = (HIGH == desiredOutput);
+      DEBUG_PRINT("RELAY - COLOR_LIGHTS_2: ");
+      DEBUG_PRINTLN(colorLights_2_ON);
       break;
     case FLICKERS:
       flickersON = (HIGH == desiredOutput);

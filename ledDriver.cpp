@@ -1,11 +1,19 @@
 #include <Arduino.h>
 #include "ledDriver.h"
 
+#ifdef DEBUG
+  #define DEBUG_PRINT(x)  Serial.print (x)
+  #define DEBUG_PRINTLN(x)  Serial.println (x)
+#else
+  #define DEBUG_PRINT(x)
+  #define DEBUG_PRINTLN(x)
+#endif
+
 CRGB leds[NUM_LEDS];
 
 void led_setup() {
   delay(3000); // 3 second delay for recovery
-  
+  DEBUG_PRINTLN("led_setup()");
   // tell FastLED about the LED strip configuration
   FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   //FastLED.addLeds<LED_TYPE,DATA_PIN,CLK_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
@@ -32,7 +40,7 @@ void led_run(func_ptr_t ledPlan_func_ptr)
   // send the 'leds' array out to the actual LED strip
   FastLED.show();  
   // insert a delay to keep the framerate modest
-  FastLED.delay(1000/FRAMES_PER_SECOND); 
+  //FastLED.delay(1000/FRAMES_PER_SECOND); 
 
   // do some periodic updates
   EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
@@ -49,6 +57,7 @@ void nextPattern()
 
 void rainbow() 
 {
+  DEBUG_PRINTLN("rainbow()");
   // FastLED's built-in rainbow generator
   fill_rainbow( leds, NUM_LEDS, gHue, 7);
 }
@@ -110,15 +119,15 @@ void runway() {
   for (i=0;i<NUM_LEDS;i++){
     leds[i] = CRGB::Red;
     FastLED.show();
-    delay(50);
+    //delay(50);
   }
   
-  delay(500);
+  //delay(500);
   // Now turn the LED off, then pause
   for (i=0;i<NUM_LEDS;i++){
     leds[i] = CRGB::Black;
     FastLED.show();
-    delay(50);
+    //delay(50);
   }
   
   //delay(250);

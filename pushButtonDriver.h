@@ -5,15 +5,20 @@
 
 #include <Arduino.h>
 
-#define PUSH_BTN_PIN 8
+//MEGA
+//#define PUSH_BTN_PIN 53
+//UNO
+#define PUSH_BTN_PIN 13
 
 #define LONG_PRESS_TIME 2000
 #define RELEASE_TIMEOUT 300 // check button state after X ms from release
 
-#define TAPPING_COOLDOWN_TIME 30000
+#define SHORT_TAPPING_COOLDOWN_TIME 10000
+#define LONG_TAPPING_COOLDOWN_TIME  10000
+#define CONT_TAPPING_COOLDOWN_TIME  1000
 
-#define SHORT_TAP_COUNT  30  // tap this many times for SHORT_TAP event
-#define LONG_TAP_COUNT   60  // tap this many times for LONG_TAP event
+#define SHORT_TAP_COUNT  10  // tap this many times for SHORT_TAP event
+#define LONG_TAP_COUNT   20  // tap this many times for LONG_TAP event
 #define CONT_TAP_COUNT   (LONG_TAP_COUNT + 10)  // after this many taps you've entered CONTINUES TAP mode
 #define CONT_TAP_CYCLE   10  // after tapping LONG_TAP_COUNT times, activate FX every CONT_TAP_CYCLE taps
 

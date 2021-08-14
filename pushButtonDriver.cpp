@@ -25,6 +25,7 @@ bool tapFlag = false;
 //#define MOVING_WINDOW_DURATION 2000
 unsigned long shortTapCooldownTimer = 0;
 unsigned long longTapCooldownTimer = 0;
+unsigned long contTapCooldownTimer = 0;
 unsigned long now = 0;
 unsigned long lastShortTapTime = 0;
 unsigned long lastLongTapTime = 0;
@@ -180,22 +181,26 @@ void clearTapTracking() {
 event_t btnTapSense() {
   shortTapCooldownTimer = now - lastShortTapTime;
   longTapCooldownTimer = now - lastLongTapTime;
-  lastContTapTime = now - lastContTapTime;  
+  contTapCooldownTimer = now - lastContTapTime;
+ 
 //  DEBUG_PRINT("shortTapCooldownTimer = ");
 //  DEBUG_PRINTLN(shortTapCooldownTimer);
 //  DEBUG_PRINT("longTapCooldownTimer = ");
 //  DEBUG_PRINTLN(longTapCooldownTimer);
 
-  if ((fallingEdgeCounter > SHORT_TAP_COUNT) && (fallingEdgeCounter < LONG_TAP_COUNT) && (shortTapCooldownTimer > TAPPING_COOLDOWN_TIME)) {
+  if ((fallingEdgeCounter > SHORT_TAP_COUNT) && (fallingEdgeCounter < LONG_TAP_COUNT) && (shortTapCooldownTimer > SHORT_TAPPING_COOLDOWN_TIME)) {
     lastShortTapTime = now;
+    DEBUG_PRINTLN("EVENT_SHORT_TAP");
     return SHORT_TAP;
   }
-  if ((fallingEdgeCounter > LONG_TAP_COUNT) && (fallingEdgeCounter < CONT_TAP_COUNT) && (longTapCooldownTimer > TAPPING_COOLDOWN_TIME)) {
+  if ((fallingEdgeCounter > LONG_TAP_COUNT) && (fallingEdgeCounter < CONT_TAP_COUNT) && (longTapCooldownTimer > LONG_TAPPING_COOLDOWN_TIME)) {
     lastLongTapTime = now;
+    DEBUG_PRINTLN("EVENT_LONG_TAP");
     return LONG_TAP;
   }
-  if ((fallingEdgeCounter > CONT_TAP_COUNT) && (fallingEdgeCounter % CONT_TAP_CYCLE == 0)) {
+  if ((fallingEdgeCounter > CONT_TAP_COUNT) && (fallingEdgeCounter % CONT_TAP_CYCLE == 0) && (contTapCooldownTimer > CONT_TAPPING_COOLDOWN_TIME)) {
     lastContTapTime = now;
+    DEBUG_PRINTLN("EVENT_CONT_TAP");
     return CONT_TAP;
   }
   return NO_EVENT;
