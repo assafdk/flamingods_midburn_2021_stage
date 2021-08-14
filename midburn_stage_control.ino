@@ -90,11 +90,12 @@ void relayToggle(int pin_number,int desiredOutput);
 
 // ------- globals ----------
 unsigned long showTime;         // counting ms into each show
-unsigned long showStartTime;    // capturing the show start
-unsigned long lastSmokeTime;
-unsigned long lastBubbleTime;
-unsigned long easterStartTime;
-unsigned long lastEventCheckTime;
+unsigned long showStartTime;    // capturing the show start moment
+unsigned long lastSmokeTime;    // relative to (counting from) showStartTime
+unsigned long smokeStartTime;   // capturing the absolute time when smoke is turned on
+unsigned long lastBubbleTime;   // relative to (counting from) showStartTime
+unsigned long easterStartTime;  // absolute time (not relative)
+unsigned long lastEventCheckTime; // capturing the absolute time when event was checked
 
 bool smokeMachineON = false;
 bool bubbleMachineON = false;
@@ -103,7 +104,9 @@ bool colorLightsON = false;
 bool songPlaying = false;
 bool flickersON = false;
 
+bool easterShortFlag = false;
 bool easterLongFlag = false;
+bool easterContFlag = false;
 bool timeToCheckEvent = true;
 
 event_t btnEvent;
@@ -216,12 +219,7 @@ void show_state()
 {
   //DEBUG_PRINTLN("show_state()");
   showTime = now-showStartTime;
-  // LEDplan = random...
-  // run LED plan
-  // 
-  // LEDs control
    
-  
   if (true == showSetupFlag) {
     if ((false == whiteLightsON) && (showTime > SHOW_WHITE_LIGHTS_TIME)) {
         DEBUG_PRINTLN("SHOW - white lights ON");
@@ -269,26 +267,42 @@ void show_state()
 
 // -- EASTER STATE --
 void easter_setup() {
-  ledPlan = rainbow;
   DEBUG_PRINTLN("easter_setup()");
   easterStartTime = now;
   relayToggle(WHITE_LIGHTS,OFF);
   relayToggle(COLOR_LIGHTS,OFF);
-  // SHORT TAP
-  relayToggle(SMOKE_MACHINE,ON);  // turn smoke on for 4 sec
   return;
 }
 
 void easter_state()
 {
-  // turn smoke off after 4 sec
-  if ((now - easterStartTime > EASTER_SMOKE_DURATION) && (true == smokeMachineON)) {
+  // add continues tap mode:
+  // if someone taps non-stop then do something every X taps
+
+  // SHORT TAP
+  if ((true == easterShortFlag)) {
+     easterShortFlag = false;
+     ledPlan = rainbow;
+     relayToggle(SMOKE_MACHINE,ON);  // turn smoke on for a few seconds
+     }
+  
+  // SHORT TAP end - turn smoke off after a few seconds
+  if ((now - smokeStartTime > EASTER_SMOKE_DURATION) && (true == smokeMachineON)) {
       relayToggle(SMOKE_MACHINE,OFF); }
-      
+         
   // LONG TAP
   if ((true == easterLongFlag) && (false == flickersON)) {
+     easterLongFlag = false;
+     ledPlan = juggle;
      relayToggle(FLICKERS,ON); }
-     
+
+  // CONT TAP
+  if (true == easterContFlag) {
+     easterContFlag = false;
+     ledPlan = bpm;
+     Serial.print(SERIAL_WOW_FX);
+     }
+
   return;
 }
 
@@ -296,7 +310,6 @@ void easter_exit() {
   DEBUG_PRINTLN("easter_exit()");
   relayToggle(SMOKE_MACHINE,OFF);
   relayToggle(FLICKERS,OFF);
-  easterLongFlag = false;
   return;
 }
 // ------------------
@@ -361,14 +374,20 @@ void transition_output(state_t prev_state, state_t cur_state, event_t event)
       if ((DOUBLE_CLICK == event) || (TRIPPLE_CLICK == event)) {
           show_setup(); }
       if (SHORT_TAP == event) {
+          easterShortFlag = true;
           easter_setup(); }
       break;
       
     case EASTER_STATE:
       if (LONG_TAP == event) {
-          easterLongFlag = true; }
+          easterLongFlag = true;
+          }
+      if (CONT_TAP == event) {
+          easterContFlag = true;
+          }
       if (cur_state != EASTER_STATE) {
-          easter_exit(); }
+          easter_exit();
+          } 
       break;        
   }
   return;
@@ -380,23 +399,23 @@ event_t getEvent()
 {
   char incomingByte;
   
-  // check if button event
+  // Button event:
   btnEvent = btnPushSense();
   if (NO_EVENT != btnEvent) {
     return btnEvent;
   }
 
-  // check if we're too long in EASTER_STATE
+  // Timeout event (EASTER): check if we're too long in EASTER_STATE
   if ((EASTER_STATE == cur_state) && (now-easterStartTime > EASTER_TIMEOUT_MS)) {
     return EASTER_TIMEOUT_EVENT;
   }
 
-  // check if we're too long in SHOW_STATE
+  // Timeout event (SHOW): check if we're too long in SHOW_STATE
   if ((SHOW_STATE == cur_state) && (now-showStartTime > SHOW_TIMEOUT_MS)) {
     return SHOW_TIMEOUT_EVENT;
   }
 
-  // recieve byte from PC to know when song is over
+  // Seial COM event: recieve byte from PC to know when song is over
   if (Serial.available() > 0) {
     incomingByte = Serial.read();
     switch (incomingByte) {
@@ -410,6 +429,8 @@ event_t getEvent()
         break;
     }
   }
+
+  // None of the above events occured:
   return NO_EVENT;
 }
 
@@ -428,6 +449,7 @@ void relayToggle(int pin_number,int desiredOutput) {
   digitalWrite(pin_number, desiredOutput);
   switch (pin_number) {
     case SMOKE_MACHINE:
+      smokeStartTime = now;
       smokeMachineON = (HIGH == desiredOutput);
       DEBUG_PRINT("RELAY - SMOKE_MACHINE: ");
       DEBUG_PRINTLN(smokeMachineON);

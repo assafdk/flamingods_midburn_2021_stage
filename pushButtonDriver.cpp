@@ -14,18 +14,7 @@ void clearAllTimersCountersEvents();
 event_t clickLookupTable(unsigned int);
 event_t btnTapSense();
 
-//typedef enum {
-//  SINGLE_CLICK,
-//  DOUBLE_CLICK,
-//  TRIPPLE_CLICK,
-//  SHORT_TAP,
-//  LONG_TAP,
-//  LONG_PRESS,
-//  TIMEOUT,
-//  SONG_END,
-//  NO_EVENT
-//} event_t;
-
+// Globals
 event_t currentButtonEvent;
 event_t lastEvent;
 event_t tapEvent = NO_EVENT;
@@ -39,10 +28,11 @@ unsigned long longTapCooldownTimer = 0;
 unsigned long now = 0;
 unsigned long lastShortTapTime = 0;
 unsigned long lastLongTapTime = 0;
+unsigned long lastContTapTime = 0;
 //unsigned long curWindowDuration = 0;
 //unsigned long windowStartTime = 0;
-unsigned long shortTapStartTime = 0;
-unsigned long longTapStartTime = 0;
+//unsigned long shortTapStartTime = 0;
+//unsigned long longTapStartTime = 0;
 
 bool fallingEdge, risingEdge;
 
@@ -189,18 +179,24 @@ void clearTapTracking() {
 
 event_t btnTapSense() {
   shortTapCooldownTimer = now - lastShortTapTime;
-  longTapCooldownTimer = now - lastLongTapTime;  
+  longTapCooldownTimer = now - lastLongTapTime;
+  lastContTapTime = now - lastContTapTime;  
 //  DEBUG_PRINT("shortTapCooldownTimer = ");
 //  DEBUG_PRINTLN(shortTapCooldownTimer);
 //  DEBUG_PRINT("longTapCooldownTimer = ");
 //  DEBUG_PRINTLN(longTapCooldownTimer);
-  if ((fallingEdgeCounter > LONG_TAP_COUNT) && (longTapCooldownTimer > TAPPING_COOLDOWN_TIME)) {
+
+  if ((fallingEdgeCounter > SHORT_TAP_COUNT) && (fallingEdgeCounter < LONG_TAP_COUNT) && (shortTapCooldownTimer > TAPPING_COOLDOWN_TIME)) {
+    lastShortTapTime = now;
+    return SHORT_TAP;
+  }
+  if ((fallingEdgeCounter > LONG_TAP_COUNT) && (fallingEdgeCounter < CONT_TAP_COUNT) && (longTapCooldownTimer > TAPPING_COOLDOWN_TIME)) {
     lastLongTapTime = now;
     return LONG_TAP;
   }
-  if ((fallingEdgeCounter > SHORT_TAP_COUNT) && (shortTapCooldownTimer > TAPPING_COOLDOWN_TIME)) {
-    lastShortTapTime = now;
-    return SHORT_TAP;
+  if ((fallingEdgeCounter > CONT_TAP_COUNT) && (fallingEdgeCounter % CONT_TAP_CYCLE == 0)) {
+    lastContTapTime = now;
+    return CONT_TAP;
   }
   return NO_EVENT;
 }

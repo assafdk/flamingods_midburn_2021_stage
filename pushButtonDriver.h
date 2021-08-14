@@ -12,8 +12,10 @@
 
 #define TAPPING_COOLDOWN_TIME 30000
 
-#define SHORT_TAP_COUNT  30  // tap duration in millisec
-#define LONG_TAP_COUNT   60  // tap duration in millisec
+#define SHORT_TAP_COUNT  30  // tap this many times for SHORT_TAP event
+#define LONG_TAP_COUNT   60  // tap this many times for LONG_TAP event
+#define CONT_TAP_COUNT   (LONG_TAP_COUNT + 10)  // after this many taps you've entered CONTINUES TAP mode
+#define CONT_TAP_CYCLE   10  // after tapping LONG_TAP_COUNT times, activate FX every CONT_TAP_CYCLE taps
 
 typedef enum {
   SINGLE_CLICK,
@@ -21,6 +23,7 @@ typedef enum {
   TRIPPLE_CLICK,
   SHORT_TAP,
   LONG_TAP,
+  CONT_TAP,
   LONG_PRESS,
   EASTER_TIMEOUT_EVENT,
   SHOW_TIMEOUT_EVENT,
