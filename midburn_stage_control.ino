@@ -143,6 +143,11 @@ void setup() {
   pinMode(SMOKE_MACHINE, OUTPUT);
   pinMode(FLICKERS, OUTPUT);
 
+//  // led output pins (interface to the other Arduino that controls the LEDs)
+//  pinMode(ARDUINO_PIN_1, OUTPUT);
+//  pinMode(LED_PIN_2, OUTPUT);
+  
+
   // set last event as now
   lastEventCheckTime = millis();
 
@@ -359,8 +364,6 @@ state_t get_new_state(state_t prev_state, event_t event)
         break;
     case SHOW_STATE:
         if ((DOUBLE_CLICK == event) || (TRIPPLE_CLICK == event)) {
-          Serial.print(SERIAL_STOP_SONG);
-          songPlaying = false;
           return SHOW_STATE; }
         if ((SHORT_TAP == event) && (showTime > EASTER_ENABLE_TIME)) {
           return EASTER_STATE; }
@@ -392,7 +395,9 @@ void transition_output(state_t prev_state, state_t cur_state, event_t event)
       
     case SHOW_STATE:
       if ((DOUBLE_CLICK == event) || (TRIPPLE_CLICK == event)) {
-          show_setup(); }
+          Serial.print(SERIAL_PLAY_SONG);
+          songPlaying = true; 
+          }
       if (SHORT_TAP == event) {
           easterShortFlag = true;
           easter_setup(); }
