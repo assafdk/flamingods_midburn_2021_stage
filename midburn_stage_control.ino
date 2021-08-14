@@ -1,11 +1,5 @@
 //#define DEBUG
-
-#include <FastLED.h>
 #include "pushButtonDriver.h"
-#include "ledDriver.h"
-
-extern void led_setup();
-extern void led_run();
 
 extern unsigned long now; // this is the time the button is pushed
 
@@ -24,6 +18,12 @@ typedef enum {
 } state_t;
 state_t cur_state, prev_state;
 
+typedef enum {
+  LED_IDLE,
+  LED_SHOW,
+  LED_EASTER,
+  LED_FUN
+} ledState_t;
 
 // ---------------------- Stage control ----------------------
 // -- constants --
@@ -55,12 +55,14 @@ state_t cur_state, prev_state;
 //#define FLICKERS        39
 
 // pins definition UNO
-#define WHITE_LIGHTS    8
-#define COLOR_LIGHTS_1  9
-#define COLOR_LIGHTS_2  7
-#define BUBBLE_MACHINE  10
-#define SMOKE_MACHINE   11
-#define FLICKERS        12
+#define WHITE_LIGHTS        8
+#define COLOR_LIGHTS_1      9
+#define COLOR_LIGHTS_2      7
+#define BUBBLE_MACHINE      10
+#define SMOKE_MACHINE       11
+#define FLICKERS            6
+#define LED_CONTROL_PIN_1   2
+#define LED_CONTROL_PIN_2   3
 
 #define SERIAL_PLAY_SONG  'P' // Play
 #define SERIAL_STOP_SONG  'S' // Stop
@@ -94,6 +96,7 @@ void transition_output(state_t prev_state, state_t cur_state, event_t event); //
 // AUX functions
 void turnAllRelaysOff();
 void relayToggle(int pin_number,int desiredOutput);
+void ledControl(ledState_t ledState);
 // ---------------------------
 
 
@@ -121,9 +124,6 @@ bool timeToCheckEvent = true;
 
 event_t btnEvent;
 
-// this holds a pointer to the current LED plan
-// choose a plan from LED plan functions in "ledDriver.h"
-func_ptr_t ledPlan;
 // --------------------------
 
 // ------------------------ Main ------------------------
@@ -143,17 +143,15 @@ void setup() {
   pinMode(SMOKE_MACHINE, OUTPUT);
   pinMode(FLICKERS, OUTPUT);
 
-//  // led output pins (interface to the other Arduino that controls the LEDs)
-//  pinMode(ARDUINO_PIN_1, OUTPUT);
-//  pinMode(LED_PIN_2, OUTPUT);
+  // led output pins (interface to the other Arduino that controls the LEDs)
+  pinMode(LED_CONTROL_PIN_1, OUTPUT);
+  pinMode(LED_CONTROL_PIN_2, OUTPUT);
   
-
   // set last event as now
   lastEventCheckTime = millis();
 
   // setup LEDs
-  //led_setup();        // init led stuff
-  ledPlan = runway;  // choose first LED plan
+  ledControl(LED_IDLE);
 }
 
 event_t event = NO_EVENT;
@@ -181,9 +179,6 @@ void loop() {
     }
   }
   
-  // LED handling
-  //led_run(ledPlan);
-  
   // state handling
   switch (cur_state)
   {
@@ -203,7 +198,7 @@ void loop() {
 // ----------- state functions -----------
 // -- IDLE STATE --
 void idle_setup() {
-  ledPlan = runway;
+  ledControl(LED_IDLE);
   DEBUG_PRINTLN("idle_setup()");
   DEBUG_PRINTLN("IDLE SETUP - STOP SONG");
   turnAllRelaysOff();
@@ -212,7 +207,6 @@ void idle_setup() {
 
 void idle_state()
 {
-  // random LED plans that are directed towards into the stage
   return;
 }
 // ----------------
@@ -220,7 +214,8 @@ void idle_state()
 // -- SHOW STATE --
 bool showSetupFlag = false;
 void show_setup() {
-  ledPlan = confetti;
+  ledControl(LED_SHOW);
+  
   DEBUG_PRINTLN("show_setup()");
   showSetupFlag = true;
   showTime = 0;
@@ -303,7 +298,7 @@ void easter_state()
   if ((true == easterShortFlag)) {
      DEBUG_PRINTLN("easter SHORT_TAP");
      easterShortFlag = false;
-     ledPlan = rainbow;
+     ledControl(LED_EASTER);
      Serial.print(SERIAL_VOCAL_WOW_FX);
      relayToggle(SMOKE_MACHINE,ON);  // turn smoke on for a few seconds
      }
@@ -315,8 +310,8 @@ void easter_state()
   // LONG TAP
   if ((true == easterLongFlag) && (false == flickersON)) {
      DEBUG_PRINTLN("easter LONG_TAP");
+     ledControl(LED_FUN);
      easterLongFlag = false;
-     ledPlan = juggle;
      Serial.print(SERIAL_ZOTI_WOW_FX);
      relayToggle(FLICKERS,ON); }
 
@@ -324,7 +319,6 @@ void easter_state()
   if (true == easterContFlag) {
      DEBUG_PRINTLN("easter CONT_TAP");
      easterContFlag = false;
-     ledPlan = bpm;
      Serial.print(SERIAL_ZOTI_WOW_FX);
      }
 
@@ -389,7 +383,6 @@ void transition_output(state_t prev_state, state_t cur_state, event_t event)
   switch (prev_state) {
     case IDLE_STATE:
       if (SINGLE_CLICK == event) {
-          // do we want to flash LEDs three times every time a song starts? (put it in show_setup())
           show_setup(); }
       break;
       
@@ -514,3 +507,10 @@ void relayToggle(int pin_number,int desiredOutput) {
   return;
   
 }
+
+void ledControl(ledState_t ledState) {
+    digitalWrite(LED_CONTROL_PIN_2, ledState / 2);
+    digitalWrite(LED_CONTROL_PIN_1, ledState % 2);
+
+    return;
+  }
