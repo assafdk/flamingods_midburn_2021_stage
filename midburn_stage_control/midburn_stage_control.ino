@@ -1,10 +1,10 @@
-//#define DEBUG
+#define DEBUG
 #include "pushButtonDriver.h"
 
 extern unsigned long now; // this is the time the button is pushed
 
 #ifdef DEBUG
-  #define DEBUG_PRINT(x)  Serial.print (x)
+  #define DEBUG_PRINT(x)    Serial.print (x)
   #define DEBUG_PRINTLN(x)  Serial.println (x)
 #else
   #define DEBUG_PRINT(x)
@@ -29,23 +29,45 @@ typedef enum {
 // -- constants --
 #define BUTTON_DELAY_MS  50      // push button debouncibg delay in millisec
 
-#define SHOW_COLOR_LIGHTS_1_TIME  500
-#define SHOW_COLOR_LIGHTS_2_TIME  1000
-#define SHOW_WHITE_LIGHTS_TIME    1500
-#define SHOW_SONG_PLAY_TIME       1500
-#define SHOW_BUBBLE_TIME          2000
-#define SHOW_SMOKE_TIME           2000
+#ifdef DEBUG
+  #define dbg_delay                 2500
+  #define SHOW_COLOR_LIGHTS_1_TIME  dbg_delay
+  #define SHOW_COLOR_LIGHTS_2_TIME  (2*dbg_delay)
+  #define SHOW_WHITE_LIGHTS_TIME    (3*dbg_delay)
+  #define SHOW_SONG_PLAY_TIME       (3*dbg_delay)
+  #define SHOW_BUBBLE_TIME          (4*dbg_delay)
+  #define SHOW_SMOKE_TIME           (4*dbg_delay)
+  
+  #define SHOW_SMOKE_DURATION       4000
+  #define SHOW_SMOKE_REPEAT_TIME    40000
+  
+  //#define SHOW_BUBBLE_DURATION    10000
+  #define SHOW_TIMEOUT_MS           (60000*6) // 6 minutes
+  
+  #define EASTER_ENABLE_TIME        (SHOW_SONG_PLAY_TIME)
+  #define EASTER_SMOKE_DURATION     4000    
+  #define EASTER_FLICKERS_DURATION  15000 
+  #define EASTER_TIMEOUT_MS         (EASTER_SMOKE_DURATION + EASTER_FLICKERS_DURATION)
+#else
+  #define SHOW_COLOR_LIGHTS_1_TIME  500
+  #define SHOW_COLOR_LIGHTS_2_TIME  1000
+  #define SHOW_WHITE_LIGHTS_TIME    1500
+  #define SHOW_SONG_PLAY_TIME       1500
+  #define SHOW_BUBBLE_TIME          2000
+  #define SHOW_SMOKE_TIME           2000
+  
+  #define SHOW_SMOKE_DURATION       4000
+  #define SHOW_SMOKE_REPEAT_TIME    40000
+  
+  //#define SHOW_BUBBLE_DURATION    10000
+  #define SHOW_TIMEOUT_MS           (60000*6) // 6 minutes
+  
+  #define EASTER_ENABLE_TIME        (SHOW_SONG_PLAY_TIME)
+  #define EASTER_SMOKE_DURATION     4000    
+  #define EASTER_FLICKERS_DURATION  15000 
+  #define EASTER_TIMEOUT_MS         (EASTER_SMOKE_DURATION + EASTER_FLICKERS_DURATION)
+#endif
 
-#define SHOW_SMOKE_DURATION       4000
-#define SHOW_SMOKE_REPEAT_TIME    40000
-
-//#define SHOW_BUBBLE_DURATION    10000
-#define SHOW_TIMEOUT_MS         (60000*6) // 6 minutes
-
-#define EASTER_ENABLE_TIME        (SHOW_SONG_PLAY_TIME)
-#define EASTER_SMOKE_DURATION     4000    
-#define EASTER_FLICKERS_DURATION  15000 
-#define EASTER_TIMEOUT_MS         (EASTER_SMOKE_DURATION + EASTER_FLICKERS_DURATION)
 
 //// pins definition MEGA
 //#define WHITE_LIGHTS    41
@@ -147,11 +169,51 @@ void setup() {
   pinMode(LED_CONTROL_PIN_1, OUTPUT);
   pinMode(LED_CONTROL_PIN_2, OUTPUT);
   
+  // initialize variables
+  prev_state = IDLE_STATE;
+  cur_state = IDLE_STATE;
+  btnEvent = NO_EVENT;
+    
   // set last event as now
   lastEventCheckTime = millis();
 
   // setup LEDs
   ledControl(LED_IDLE);
+
+  // print constants
+  DEBUG_PRINTLN("Printing constants:");
+  DEBUG_PRINT("dbg_delay = ");
+  DEBUG_PRINTLN(dbg_delay);
+  DEBUG_PRINT("SHOW_COLOR_LIGHTS_1_TIME = ");
+  DEBUG_PRINTLN(SHOW_COLOR_LIGHTS_1_TIME);
+  DEBUG_PRINT("SHOW_COLOR_LIGHTS_2_TIME = ");
+  DEBUG_PRINTLN(SHOW_COLOR_LIGHTS_2_TIME);
+  DEBUG_PRINT("SHOW_WHITE_LIGHTS_TIME = ");    
+  DEBUG_PRINTLN(SHOW_WHITE_LIGHTS_TIME);    
+  DEBUG_PRINT("SHOW_SONG_PLAY_TIME = ");       
+  DEBUG_PRINTLN(SHOW_SONG_PLAY_TIME);       
+  DEBUG_PRINT("SHOW_BUBBLE_TIME = ");          
+  DEBUG_PRINTLN(SHOW_BUBBLE_TIME);          
+  DEBUG_PRINT("SHOW_SMOKE_TIME = ");          
+  DEBUG_PRINTLN(SHOW_SMOKE_TIME);          
+  
+  DEBUG_PRINT("SHOW_SMOKE_DURATION = ");       
+  DEBUG_PRINTLN(SHOW_SMOKE_DURATION);       
+  DEBUG_PRINT("SHOW_SMOKE_REPEAT_TIME = ");    
+  DEBUG_PRINTLN(SHOW_SMOKE_REPEAT_TIME);    
+  
+  //DEBUG_PRINT("SHOW_BUBBLE_DURATION    
+  //DEBUG_PRINTLN(SHOW_BUBBLE_DURATION    
+  DEBUG_PRINT("SHOW_TIMEOUT_MS = ");           
+  DEBUG_PRINTLN(SHOW_TIMEOUT_MS);           
+  
+  DEBUG_PRINT("EASTER_ENABLE_TIME = ");       
+  DEBUG_PRINTLN(EASTER_ENABLE_TIME);       
+  DEBUG_PRINT("EASTER_SMOKE_DURATION = ");         
+  DEBUG_PRINTLN(EASTER_SMOKE_DURATION);         
+  DEBUG_PRINT("EASTER_FLICKERS_DURATION = ");  
+  DEBUG_PRINTLN(EASTER_TIMEOUT_MS);        
+  DEBUG_PRINT("EASTER_TIMEOUT_MS = ");        
 }
 
 event_t event = NO_EVENT;
@@ -219,7 +281,7 @@ void show_setup() {
   DEBUG_PRINTLN("show_setup()");
   showSetupFlag = true;
   showTime = 0;
-  showStartTime = millis();
+  showStartTime = now;
   return;
 }
 
@@ -230,47 +292,65 @@ void show_state()
   if (true == showSetupFlag) {
     // Color 1
     if ((false == colorLights_1_ON) && (showTime > SHOW_COLOR_LIGHTS_1_TIME)) {
+        DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
+        DEBUG_PRINTLN(showTime);
         DEBUG_PRINTLN("SHOW - color lights 1 ON");
         relayToggle(COLOR_LIGHTS_1,ON);}
     // Color 2
     if ((false == colorLights_2_ON) && (showTime > SHOW_COLOR_LIGHTS_2_TIME)) {
+        DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
+        DEBUG_PRINTLN(showTime);
         DEBUG_PRINTLN("SHOW - color lights 2 ON");
         relayToggle(COLOR_LIGHTS_2,ON);}    
     // White lights
     if ((false == whiteLightsON) && (showTime > SHOW_WHITE_LIGHTS_TIME)) {
+        DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
+        DEBUG_PRINTLN(showTime);
         DEBUG_PRINTLN("SHOW - white lights ON");
         relayToggle(WHITE_LIGHTS,ON);}
     // Play song
     if ((false == songPlaying) && (showTime > SHOW_SONG_PLAY_TIME)) {
+        DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
+        DEBUG_PRINTLN(showTime);
         DEBUG_PRINTLN("SHOW - play song");
         Serial.print(SERIAL_PLAY_SONG);
         songPlaying = true;}
     // Bubbles
     if ((false == bubbleMachineON) && (showTime > SHOW_BUBBLE_TIME)) {
+        DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
+        DEBUG_PRINTLN(showTime);
         DEBUG_PRINTLN("SHOW - bubbules ON");
         relayToggle(BUBBLE_MACHINE,ON);}
     
     // Smoke
     if ((false == smokeMachineON) && (showTime > SHOW_SMOKE_TIME)) {
+        DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
+        DEBUG_PRINTLN(showTime);
         DEBUG_PRINTLN("SHOW - smoke ON");
         relayToggle(SMOKE_MACHINE,ON);
         lastSmokeTime = showTime;}
 
     // exit setup when everything is ON
     if (whiteLightsON && colorLights_1_ON && colorLights_2_ON && songPlaying && smokeMachineON && bubbleMachineON) {
+        DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
+        DEBUG_PRINTLN(showTime);
         DEBUG_PRINTLN("end show setup");
         showSetupFlag = false; }
   }
 
   // smoke machine control
   // smoke ON
-  if ((showTime - lastSmokeTime > SHOW_SMOKE_REPEAT_TIME) && (false == smokeMachineON)) {
+  if ((showTime - lastSmokeTime > SHOW_SMOKE_REPEAT_TIME) && (false == smokeMachineON) && (false == showSetupFlag)) {
+      DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
+      DEBUG_PRINTLN(showTime);
       DEBUG_PRINTLN("SHOW - smoke ON");
       relayToggle(SMOKE_MACHINE,ON);
       lastSmokeTime = showTime; }
 
-  // smoke machine control
+  // smoke OFF
   if (true == smokeMachineON && (showTime-lastSmokeTime > SHOW_SMOKE_DURATION)) {
+      DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
+      DEBUG_PRINTLN(showTime);
       DEBUG_PRINTLN("SHOW - smoke OFF");
       relayToggle(SMOKE_MACHINE,OFF);
   }

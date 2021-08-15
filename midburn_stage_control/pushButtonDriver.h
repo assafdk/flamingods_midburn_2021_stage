@@ -1,4 +1,4 @@
-//#define DEBUG
+#define DEBUG
 
 #ifndef PUSH_BUTTON_LIBRARY_H
 #define PUSH_BUTTON_LIBRARY_H
