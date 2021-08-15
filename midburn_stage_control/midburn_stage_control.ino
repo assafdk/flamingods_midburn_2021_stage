@@ -337,19 +337,16 @@ void easter_exit() {
 state_t get_new_state(state_t prev_state, event_t event)
 {
   if (SONG_END == event) {
-    songPlaying = false;
     return IDLE_STATE;
   }
   
   if (LONG_PRESS == event) {
-    Serial.print(SERIAL_STOP_SONG);
-    songPlaying = false;
     return IDLE_STATE;
   }
   
   if ((IDLE_STATE != prev_state) && (SHOW_TIMEOUT_EVENT == event)) {
-    songPlaying = false;
-          return IDLE_STATE; }
+      songPlaying = false;
+      return IDLE_STATE; }
           
   switch (prev_state) {
     case IDLE_STATE:
@@ -376,13 +373,24 @@ state_t get_new_state(state_t prev_state, event_t event)
 // transitions between states
 void transition_output(state_t prev_state, state_t cur_state, event_t event)
 {
-  if ((SONG_END == event) || (LONG_PRESS == event)) {
+  if (SONG_END == event) {
+    songPlaying = false;
     idle_setup();
+    return; }
+
+  if (LONG_PRESS == event) {
+    songPlaying = false;
+    Serial.print(SERIAL_STOP_SONG);
+    idle_setup();
+    return; }
+
+  if ((IDLE_STATE != prev_state) && (SHOW_TIMEOUT_EVENT == event)) {
+    songPlaying = false;
     return; }
    
   switch (prev_state) {
     case IDLE_STATE:
-      if (SINGLE_CLICK == event) {
+      if (SHOW_STATE == cur_state) {    // SINGLE_CLICK == event) {
           show_setup(); }
       break;
       
@@ -391,7 +399,7 @@ void transition_output(state_t prev_state, state_t cur_state, event_t event)
           Serial.print(SERIAL_PLAY_SONG);
           songPlaying = true; 
           }
-      if (SHORT_TAP == event) {
+      if (EASTER_STATE == cur_state) {    // (SHORT_TAP == event) {
           easterShortFlag = true;
           easter_setup(); }
       break;
