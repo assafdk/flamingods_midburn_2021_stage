@@ -28,6 +28,13 @@ FASTLED_USING_NAMESPACE
 #define BRIGHTNESS          96
 #define FRAMES_PER_SECOND  120
 
+typedef enum {
+  LED_IDLE,
+  LED_SHOW,
+  LED_EASTER,
+  LED_FUN
+} ledState_t;
+
 // function pointer type.
 // this will be used to choose an led operation function (such as rainbow) and pass it to led_run() for activation
 typedef void (*func_ptr_t)();
