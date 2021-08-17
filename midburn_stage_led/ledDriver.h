@@ -19,7 +19,7 @@ FASTLED_USING_NAMESPACE
 #warning "Requires FastLED 3.1 or later; check github for latest code."
 #endif
 
-#define DATA_PIN    3
+#define DATA_PIN    7
 //#define CLK_PIN   4
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
@@ -27,13 +27,6 @@ FASTLED_USING_NAMESPACE
 
 #define BRIGHTNESS          96
 #define FRAMES_PER_SECOND  120
-
-typedef enum {
-  LED_IDLE,
-  LED_SHOW,
-  LED_EASTER,
-  LED_FUN
-} ledState_t;
 
 // function pointer type.
 // this will be used to choose an led operation function (such as rainbow) and pass it to led_run() for activation
