@@ -46,5 +46,6 @@ void sinelon();
 void bpm();
 void juggle();
 void runway();
+void trail();
 
 #endif

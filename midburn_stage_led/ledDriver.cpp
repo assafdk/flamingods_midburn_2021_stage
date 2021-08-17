@@ -132,3 +132,13 @@ void runway() {
   
   //delay(250);
 }
+
+void trail() { 
+  int i;
+  for (i=1;i<NUM_LEDS;i++){
+    leds[i] = CRGB::Red;
+    leds[i-1] = CRGB::Black;
+    FastLED.show();
+    delay(20);
+  }
+}

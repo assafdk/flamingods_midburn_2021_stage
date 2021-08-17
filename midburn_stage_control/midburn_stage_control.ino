@@ -1,5 +1,8 @@
 #define DEBUG
+#define I2C
+
 #include "pushButtonDriver.h"
+#include <Wire.h>
 
 extern unsigned long now; // this is the time the button is pushed
 
@@ -10,6 +13,9 @@ extern unsigned long now; // this is the time the button is pushed
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
 #endif
+
+// if using I2C
+#define I2C_SLAVE_ADDR 9
 
 typedef enum {
   IDLE_STATE,
@@ -119,6 +125,7 @@ void transition_output(state_t prev_state, state_t cur_state, event_t event); //
 void turnAllRelaysOff();
 void relayToggle(int pin_number,int desiredOutput);
 void ledControl(ledState_t ledState);
+void ledControl_I2C(ledState_t ledState);
 // ---------------------------
 
 
@@ -153,7 +160,9 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600); // open the serial port at 9600 bps
   DEBUG_PRINTLN("DEBUG MODE");
-
+  
+  setupLedCom(); // I2C or direct
+  
   // input pin
   pinMode(PUSH_BTN_PIN, INPUT_PULLUP);
 
@@ -164,10 +173,6 @@ void setup() {
   pinMode(BUBBLE_MACHINE, OUTPUT);
   pinMode(SMOKE_MACHINE, OUTPUT);
   pinMode(FLICKERS, OUTPUT);
-
-  // led output pins (interface to the other Arduino that controls the LEDs)
-  pinMode(LED_CONTROL_PIN_1, OUTPUT);
-  pinMode(LED_CONTROL_PIN_2, OUTPUT);
   
   // initialize variables
   prev_state = IDLE_STATE;
@@ -596,9 +601,33 @@ void relayToggle(int pin_number,int desiredOutput) {
   
 }
 
-void ledControl(ledState_t ledState) {
-    digitalWrite(LED_CONTROL_PIN_2, ledState / 2);
-    digitalWrite(LED_CONTROL_PIN_1, ledState % 2);
-
+void ledControl_I2C(ledState_t ledState) {
+    Wire.beginTransmission(I2C_SLAVE_ADDR);
+    Wire.write(ledState);
+    Wire.endTransmission();
     return;
   }
+
+void ledControl(ledState_t ledState) {
+    #ifdef I2C
+      ledControl_I2C(ledState);
+      DEBUG_PRINT("I2C --> ");
+      DEBUG_PRINTLN(ledState);
+    #else  
+      digitalWrite(LED_CONTROL_PIN_2, ledState / 2);
+      digitalWrite(LED_CONTROL_PIN_1, ledState % 2);
+    #endif
+    return;
+  }
+
+void setupLedCom() { // I2C or direct
+  #ifdef I2C
+    //start I2C
+    Wire.begin();
+  #else
+    // led output pins (interface to the other Arduino that controls the LEDs)
+    pinMode(LED_CONTROL_PIN_1, OUTPUT);
+    pinMode(LED_CONTROL_PIN_2, OUTPUT);
+  #endif
+  return;
+}
