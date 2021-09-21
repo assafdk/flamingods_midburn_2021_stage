@@ -1,4 +1,4 @@
-#define DEBUG
+//#define DEBUG
 #define I2C
 
 #include "pushButtonDriver.h"
@@ -76,11 +76,16 @@ typedef enum {
 
 
 //// pins definition MEGA
-//#define WHITE_LIGHTS    41
-//#define COLOR_LIGHTS    43
-//#define BUBBLE_MACHINE  45
-//#define SMOKE_MACHINE   47
-//#define FLICKERS        39
+//#define WHITE_LIGHTS        31
+//#define COLOR_LIGHTS_1      33
+//#define COLOR_LIGHTS_2      35
+//#define BUBBLE_MACHINE      37
+//#define SMOKE_MACHINE       39
+//#define FLICKERS            41
+//#define WHITE_LIGHTS_BACKUP        43
+//#define COLOR_LIGHTS_1_BACKUP      45
+//#define COLOR_LIGHTS_2_BACKUP      47
+//#define FLICKERS_BACKUP            49
 
 // pins definition UNO
 #define WHITE_LIGHTS        8
@@ -89,8 +94,13 @@ typedef enum {
 #define BUBBLE_MACHINE      10
 #define SMOKE_MACHINE       11
 #define FLICKERS            6
-#define LED_CONTROL_PIN_1   2
-#define LED_CONTROL_PIN_2   3
+//#define LED_CONTROL_PIN_1   2
+//#define LED_CONTROL_PIN_2   3
+
+#define WHITE_LIGHTS_BACKUP        2
+#define COLOR_LIGHTS_1_BACKUP      3
+#define COLOR_LIGHTS_2_BACKUP      4
+#define FLICKERS_BACKUP            5
 
 #define SERIAL_PLAY_SONG  'P' // Play
 #define SERIAL_STOP_SONG  'S' // Stop
@@ -173,6 +183,11 @@ void setup() {
   pinMode(BUBBLE_MACHINE, OUTPUT);
   pinMode(SMOKE_MACHINE, OUTPUT);
   pinMode(FLICKERS, OUTPUT);
+  
+  pinMode(WHITE_LIGHTS_BACKUP, OUTPUT);
+  pinMode(COLOR_LIGHTS_1_BACKUP, OUTPUT);
+  pinMode(COLOR_LIGHTS_2_BACKUP, OUTPUT);
+  pinMode(FLICKERS_BACKUP, OUTPUT);
   
   // initialize variables
   prev_state = IDLE_STATE;
@@ -300,19 +315,19 @@ void show_state()
         DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
         DEBUG_PRINTLN(showTime);
         DEBUG_PRINTLN("SHOW - color lights 1 ON");
-        relayToggle(COLOR_LIGHTS_1,ON);}
+        relayToggle(COLOR_LIGHTS_1,ON); relayToggle(COLOR_LIGHTS_1_BACKUP,ON);}
     // Color 2
     if ((false == colorLights_2_ON) && (showTime > SHOW_COLOR_LIGHTS_2_TIME)) {
         DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
         DEBUG_PRINTLN(showTime);
         DEBUG_PRINTLN("SHOW - color lights 2 ON");
-        relayToggle(COLOR_LIGHTS_2,ON);}    
+        relayToggle(COLOR_LIGHTS_2,ON); relayToggle(COLOR_LIGHTS_2_BACKUP,ON);}    
     // White lights
     if ((false == whiteLightsON) && (showTime > SHOW_WHITE_LIGHTS_TIME)) {
         DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
         DEBUG_PRINTLN(showTime);
         DEBUG_PRINTLN("SHOW - white lights ON");
-        relayToggle(WHITE_LIGHTS,ON);}
+        relayToggle(WHITE_LIGHTS,ON); relayToggle(WHITE_LIGHTS_BACKUP,ON);}
     // Play song
     if ((false == songPlaying) && (showTime > SHOW_SONG_PLAY_TIME)) {
         DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
@@ -368,9 +383,9 @@ void show_state()
 void easter_setup() {
   DEBUG_PRINTLN("easter_setup()");
   easterStartTime = now;
-  relayToggle(WHITE_LIGHTS,OFF);
-  relayToggle(COLOR_LIGHTS_1,OFF);
-  relayToggle(COLOR_LIGHTS_2,OFF);
+  relayToggle(WHITE_LIGHTS,OFF); relayToggle(WHITE_LIGHTS_BACKUP,OFF);
+  relayToggle(COLOR_LIGHTS_1,OFF); relayToggle(COLOR_LIGHTS_1_BACKUP,OFF);
+  relayToggle(COLOR_LIGHTS_2,OFF); relayToggle(COLOR_LIGHTS_2_BACKUP,OFF);
   return;
 }
 
@@ -398,7 +413,7 @@ void easter_state()
      ledControl(LED_FUN);
      easterLongFlag = false;
      Serial.print(SERIAL_ZOTI_WOW_FX);
-     relayToggle(FLICKERS,ON); }
+     relayToggle(FLICKERS,ON); relayToggle(FLICKERS_BACKUP,ON); }
 
   // CONT TAP
   if (true == easterContFlag) {
@@ -413,7 +428,7 @@ void easter_state()
 void easter_exit() {
   DEBUG_PRINTLN("easter_exit()");
   relayToggle(SMOKE_MACHINE,OFF);
-  relayToggle(FLICKERS,OFF);
+  relayToggle(FLICKERS,OFF); relayToggle(FLICKERS_BACKUP,OFF);
   return;
 }
 // ------------------
@@ -551,10 +566,10 @@ event_t getEvent()
 void turnAllRelaysOff() {
   relayToggle(SMOKE_MACHINE,OFF);
   relayToggle(BUBBLE_MACHINE,OFF);
-  relayToggle(FLICKERS,OFF);
-  relayToggle(WHITE_LIGHTS,OFF);
-  relayToggle(COLOR_LIGHTS_1,OFF);
-  relayToggle(COLOR_LIGHTS_2,OFF);
+  relayToggle(FLICKERS,OFF); relayToggle(FLICKERS_BACKUP,OFF);
+  relayToggle(WHITE_LIGHTS,OFF); relayToggle(WHITE_LIGHTS_BACKUP,OFF);
+  relayToggle(COLOR_LIGHTS_1,OFF); relayToggle(COLOR_LIGHTS_1_BACKUP,OFF);
+  relayToggle(COLOR_LIGHTS_2,OFF); relayToggle(COLOR_LIGHTS_2_BACKUP,OFF);
 }
 
 

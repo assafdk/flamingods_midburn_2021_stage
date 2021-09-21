@@ -1,4 +1,4 @@
-#define DEBUG
+//#define DEBUG
 
 #ifndef PUSH_BUTTON_LIBRARY_H
 #define PUSH_BUTTON_LIBRARY_H
@@ -6,7 +6,7 @@
 #include <Arduino.h>
 
 //MEGA
-//#define PUSH_BTN_PIN 53
+//#define PUSH_BTN_PIN 52
 //UNO
 #define PUSH_BTN_PIN 13
 
