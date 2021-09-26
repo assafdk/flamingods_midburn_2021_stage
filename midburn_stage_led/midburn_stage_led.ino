@@ -78,6 +78,8 @@ void loop() {
   // activate the right LED plan according to the control pins.
   // LED plan options are:
   // sawtooth, flow, trail, runway, rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm
+  // confetti - great for NIGHT MODE when you don't invite people to go on stage
+  
   switch (ledState) {
     case LED_IDLE:
       ledPlan = flow; //sawtooth; // flow;
