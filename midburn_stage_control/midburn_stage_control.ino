@@ -92,7 +92,7 @@ typedef enum {
 #define COLOR_LIGHTS_1      9
 #define COLOR_LIGHTS_2      7
 #define BUBBLE_MACHINE      10
-#define SMOKE_MACHINE       11
+#define SMOKE_MACHINE       5 // new
 #define FLICKERS            6
 //#define LED_CONTROL_PIN_1   2
 //#define LED_CONTROL_PIN_2   3
@@ -100,7 +100,7 @@ typedef enum {
 #define WHITE_LIGHTS_BACKUP        2
 #define COLOR_LIGHTS_1_BACKUP      3
 #define COLOR_LIGHTS_2_BACKUP      4
-#define FLICKERS_BACKUP            5
+#define FLICKERS_BACKUP            11
 
 #define SERIAL_PLAY_SONG  'P' // Play
 #define SERIAL_STOP_SONG  'S' // Stop

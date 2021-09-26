@@ -61,7 +61,7 @@ void setup() {
   // put your setup code here, to run once:
   ledState = LED_IDLE;
   led_setup();        // init led stuff
-  ledPlan = trail;   // choose first LED plan
+  ledPlan = flow; //sawtooth; //flow;   // choose first LED plan
 }
 
 void loop() {
@@ -70,15 +70,17 @@ void loop() {
   // poll for current control pins state if not using I2C
   ledState = getLedState();
   #endif
-  
-  //ledState = getSerialCommand();
+
+  #ifdef DEBUG
+  ledState = getSerialCommand();
+  #endif
   
   // activate the right LED plan according to the control pins.
   // LED plan options are:
-  // runway, rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm
+  // sawtooth, flow, trail, runway, rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm
   switch (ledState) {
     case LED_IDLE:
-      ledPlan = trail;
+      ledPlan = flow; //sawtooth; // flow;
       break;
     case LED_SHOW:
       ledPlan = rainbow;

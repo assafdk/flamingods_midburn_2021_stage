@@ -25,8 +25,9 @@ FASTLED_USING_NAMESPACE
 #define COLOR_ORDER GRB
 #define NUM_LEDS    (60*5)
 
-#define BRIGHTNESS          96
+#define BRIGHTNESS          255
 #define FRAMES_PER_SECOND  120
+#define LED_DELAY          0
 
 // function pointer type.
 // this will be used to choose an led operation function (such as rainbow) and pass it to led_run() for activation
@@ -47,5 +48,8 @@ void bpm();
 void juggle();
 void runway();
 void trail();
+void flow();
+void sawtooth();
+void all_white();
 
 #endif

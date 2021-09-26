@@ -43,8 +43,8 @@ void led_run(func_ptr_t ledPlan_func_ptr)
   //FastLED.delay(1000/FRAMES_PER_SECOND); 
 
   // do some periodic updates
-  EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
-  EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
+//  EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
+//  EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
 }
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
@@ -141,4 +141,81 @@ void trail() {
     FastLED.show();
     delay(20);
   }
+}
+
+// ------------ flow --------------
+
+//void fadeall() { for(int i = 0; i < NUM_LEDS; i++) { leds[i].nscale8(250);} }
+
+void flow() { 
+  static uint8_t hue = 0;
+  static int cur_led = 0;
+  // First slide the led in one direction
+  
+//  for(int i = 0; i < NUM_LEDS; i++) {
+    // Set the i'th led to red
+//    if(hue > 255) {hue = 0;}
+    if(cur_led > NUM_LEDS) {cur_led = 0;}
+    leds[cur_led++] = CHSV(hue++, 255, 255);
+    // Show the leds
+//    FastLED.show(); 
+    // now that we've shown the leds, reset the i'th led to black
+    // leds[i] = CRGB::Black;
+    fadeToBlackBy(leds,NUM_LEDS,10);
+    // Wait a little bit before we loop around and do it again
+//    delay(LED_DELAY);
+  }
+
+void sawtooth() { 
+  static uint8_t hue = 0;
+  // beat8 creates a sawtooth shape
+  int pos = map(beat8(40,0),0,255,0,NUM_LEDS-1);
+  leds[pos] = CHSV(hue, 255, 255);
+
+  EVERY_N_MILLISECONDS(LED_DELAY) {
+    hue++;
+  }
+  fadeToBlackBy(leds,NUM_LEDS,3);
+}
+
+//void flow_RGB() { 
+//  static uint8_t hue = 0;
+//  CRGB rgb_leds[NUM_LEDS];
+//
+//  triwave8()
+//  uint8_t sinBeat = beatsin8(30,0,NUM_LEDS-1,0,0);
+//  rgb_leds[sinBeat] = 
+//  // First slide the led in one direction
+//  for(int i = 0; i < NUM_LEDS; i++) {
+//    // Set the i'th led to red
+////    if(hue > 255) {hue = 0;}
+//    leds[i] = CHSV(hue++, 255, 255);
+//    // Show the leds
+//    FastLED.show(); 
+//    // now that we've shown the leds, reset the i'th led to black
+//    // leds[i] = CRGB::Black;
+//    fadeToBlackBy(leds,NUM_LEDS,10);
+//  }
+//  // Now go in the other direction.  
+//  for(int i = (NUM_LEDS)-1; i >= 0; i--) {
+//    // Set the i'th led to red
+////    if(hue > 255) {hue = 0;} 
+//    leds[i] = CHSV(hue++, 255, 255);
+//    // Show the leds
+//    FastLED.show();
+//    // now that we've shown the leds, reset the i'th led to black
+//    // leds[i] = CRGB::Black;
+////    fadeall();
+//    // Wait a little bit before we loop around and do it again
+//    delay(LED_DELAY);
+//  }
+//}
+
+void all_white() { 
+  int i;
+  for (i=1;i<NUM_LEDS;i++){
+    leds[i] = CRGB::White;
+    FastLED.show();
+  }
+//  delay(5000);
 }
