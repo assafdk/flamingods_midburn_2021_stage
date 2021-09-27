@@ -1,4 +1,4 @@
-//#define DEBUG
+#define DEBUG
 #define I2C
 
 #include "pushButtonDriver.h"
@@ -36,7 +36,7 @@ typedef enum {
 #define BUTTON_DELAY_MS  50      // push button debouncibg delay in millisec
 
 #ifdef DEBUG
-  #define dbg_delay                 2500
+  #define dbg_delay                 5000
   #define SHOW_COLOR_LIGHTS_1_TIME  dbg_delay
   #define SHOW_COLOR_LIGHTS_2_TIME  (2*dbg_delay)
   #define SHOW_WHITE_LIGHTS_TIME    (3*dbg_delay)
@@ -188,6 +188,8 @@ void setup() {
   pinMode(COLOR_LIGHTS_1_BACKUP, OUTPUT);
   pinMode(COLOR_LIGHTS_2_BACKUP, OUTPUT);
   pinMode(FLICKERS_BACKUP, OUTPUT);
+
+  turnAllRelaysOff();
   
   // initialize variables
   prev_state = IDLE_STATE;
@@ -231,9 +233,10 @@ void setup() {
   DEBUG_PRINTLN(EASTER_ENABLE_TIME);       
   DEBUG_PRINT("EASTER_SMOKE_DURATION = ");         
   DEBUG_PRINTLN(EASTER_SMOKE_DURATION);         
-  DEBUG_PRINT("EASTER_FLICKERS_DURATION = ");  
-  DEBUG_PRINTLN(EASTER_TIMEOUT_MS);        
+  DEBUG_PRINT("EASTER_FLICKERS_DURATION = ");
+  DEBUG_PRINTLN(EASTER_FLICKERS_DURATION);  
   DEBUG_PRINT("EASTER_TIMEOUT_MS = ");        
+  DEBUG_PRINTLN(EASTER_TIMEOUT_MS);
 }
 
 event_t event = NO_EVENT;
@@ -403,7 +406,7 @@ void easter_state()
      relayToggle(SMOKE_MACHINE,ON);  // turn smoke on for a few seconds
      }
   
-  // SHORT TAP end - turn smoke off after a few seconds
+  // SHORT TAP end: turn smoke off after a few seconds
   if ((now - smokeStartTime > EASTER_SMOKE_DURATION) && (true == smokeMachineON)) {
       relayToggle(SMOKE_MACHINE,OFF);}
          
@@ -429,6 +432,14 @@ void easter_exit() {
   DEBUG_PRINTLN("easter_exit()");
   relayToggle(SMOKE_MACHINE,OFF);
   relayToggle(FLICKERS,OFF); relayToggle(FLICKERS_BACKUP,OFF);
+  return;
+}
+
+void show_lights_ON() {
+  DEBUG_PRINTLN("show_lights_ON()");
+  relayToggle(WHITE_LIGHTS,ON); relayToggle(WHITE_LIGHTS_BACKUP,ON);
+  relayToggle(COLOR_LIGHTS_1,ON); relayToggle(COLOR_LIGHTS_1_BACKUP,ON);
+  relayToggle(COLOR_LIGHTS_2,ON); relayToggle(COLOR_LIGHTS_2_BACKUP,ON);
   return;
 }
 // ------------------
@@ -510,6 +521,9 @@ void transition_output(state_t prev_state, state_t cur_state, event_t event)
           }
       if (CONT_TAP == event) {
           easterContFlag = true;
+          }
+      if (cur_state == SHOW_STATE) {
+          show_lights_ON();
           }
       if (cur_state != EASTER_STATE) {
           easter_exit();
