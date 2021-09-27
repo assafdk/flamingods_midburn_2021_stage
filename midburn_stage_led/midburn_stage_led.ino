@@ -81,20 +81,20 @@ void loop() {
   // confetti - great for NIGHT MODE when you don't invite people to go on stage
   
   switch (ledState) {
-    case LED_IDLE:
+    case LED_IDLE: // 0
       ledPlan = flow; //sawtooth; // flow;
       break;
-    case LED_SHOW:
+    case LED_SHOW: // 1
       ledPlan = rainbow;
       break;
-    case LED_EASTER:
-      ledPlan = confetti;
+    case LED_EASTER: // 2
+      ledPlan = bpm;
       break;
-    case LED_FUN:
-      ledPlan = sinelon;
+    case LED_FUN: // 3
+      ledPlan = juggle;
       break;
-    default:
-      ledPlan = rainbowWithGlitter;
+    default: // >= 4
+      ledPlan = sawtooth;
       break;
   }
   DEBUG_PRINT("ledState = ");
@@ -122,7 +122,7 @@ ledState_t getSerialCommand() {
   // Seial COM event: recieve byte from PC to know when song is over
   if (Serial.available() > 0) {
     incomingByte = Serial.read();
-    if ((incomingByte < '0') || (incomingByte > '3')) {
+    if ((incomingByte < '0') || (incomingByte > '4')) {
       return ledState;
     }
     return (incomingByte - '0');

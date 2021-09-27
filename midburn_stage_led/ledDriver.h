@@ -42,10 +42,10 @@ void nextPattern();
 void rainbow();
 void rainbowWithGlitter();
 void addGlitter(fract8);
-void confetti();
-void sinelon();
-void bpm();
-void juggle();
+void confetti();  // gentle
+void sinelon();   // red directional spread pixels
+void bpm();       // rainbow that runs back and forth
+void juggle();    // lots of different colors running (sin waves on top of on another?)
 void runway();
 void trail();
 void flow();
