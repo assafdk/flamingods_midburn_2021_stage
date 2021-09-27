@@ -324,7 +324,8 @@ void show_state()
         DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
         DEBUG_PRINTLN(showTime);
         DEBUG_PRINTLN("SHOW - color lights 2 ON");
-        relayToggle(COLOR_LIGHTS_2,ON); relayToggle(COLOR_LIGHTS_2_BACKUP,ON);}    
+        relayToggle(COLOR_LIGHTS_2,ON); relayToggle(COLOR_LIGHTS_2_BACKUP,ON);
+        relayToggle(FLICKERS,ON); relayToggle(FLICKERS_BACKUP,ON);}    
     // White lights
     if ((false == whiteLightsON) && (showTime > SHOW_WHITE_LIGHTS_TIME)) {
         DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
@@ -411,12 +412,12 @@ void easter_state()
       relayToggle(SMOKE_MACHINE,OFF);}
          
   // LONG TAP
-  if ((true == easterLongFlag) && (false == flickersON)) {
+  if (true == easterLongFlag) {
      DEBUG_PRINTLN("easter LONG_TAP");
      ledControl(LED_FUN);
      easterLongFlag = false;
      Serial.print(SERIAL_ZOTI_WOW_FX);
-     relayToggle(FLICKERS,ON); relayToggle(FLICKERS_BACKUP,ON); }
+     }
 
   // CONT TAP
   if (true == easterContFlag) {
@@ -431,7 +432,6 @@ void easter_state()
 void easter_exit() {
   DEBUG_PRINTLN("easter_exit()");
   relayToggle(SMOKE_MACHINE,OFF);
-  relayToggle(FLICKERS,OFF); relayToggle(FLICKERS_BACKUP,OFF);
   return;
 }
 
@@ -625,7 +625,7 @@ void relayToggle(int pin_number,int desiredOutput) {
       DEBUG_PRINTLN(flickersON);
       break;
     default:
-      DEBUG_PRINTLN("undefined pin");
+      DEBUG_PRINTLN("undefined pin - probably a BACKUP relay");
       break;
   }
   return;
