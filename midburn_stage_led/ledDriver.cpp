@@ -150,6 +150,16 @@ void trail() {
 void flow() { 
   static uint8_t hue = 0;
   static int cur_led = 0;
+  
+  // slide the led in one direction
+  if(cur_led < 0) {cur_led = NUM_LEDS-1;}
+  leds[cur_led--] = CHSV(hue++, 255, 255);
+  fadeToBlackBy(leds,NUM_LEDS,10);
+  }
+
+void back_flow() { 
+  static uint8_t hue = 0;
+  static int cur_led = 0;
   // First slide the led in one direction
   
 //  for(int i = 0; i < NUM_LEDS; i++) {

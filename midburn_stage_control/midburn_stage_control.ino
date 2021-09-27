@@ -1,4 +1,4 @@
-#define DEBUG
+//#define DEBUG
 #define I2C
 
 #include "pushButtonDriver.h"
@@ -437,9 +437,11 @@ void easter_exit() {
 
 void show_lights_ON() {
   DEBUG_PRINTLN("show_lights_ON()");
+  ledControl(LED_SHOW);
   relayToggle(WHITE_LIGHTS,ON); relayToggle(WHITE_LIGHTS_BACKUP,ON);
   relayToggle(COLOR_LIGHTS_1,ON); relayToggle(COLOR_LIGHTS_1_BACKUP,ON);
   relayToggle(COLOR_LIGHTS_2,ON); relayToggle(COLOR_LIGHTS_2_BACKUP,ON);
+  
   return;
 }
 // ------------------
