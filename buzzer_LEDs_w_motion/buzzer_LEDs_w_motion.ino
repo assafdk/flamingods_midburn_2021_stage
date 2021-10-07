@@ -1,12 +1,16 @@
 /* Example code for HC-SR501 PIR motion sensor with Arduino. More info: www.www.makerguides.com */
-//#define DEBUG
-#define DELAY 25
-
-#include <FastLED.h>
+#include <Arduino.h>
 #include "ledDriver.h"
 
+//#define DEBUG
+#define MOTION_TIMEOUT 10000
+
 // Define connection pins:
-#define pirPin 2
+#define pirPin1 3
+#define pirPin2 4
+#define pirPin3 5
+#define pirPin4 6
+
 #define ledPin 13
 
 #ifdef DEBUG
@@ -18,7 +22,14 @@
 #endif
 
 // Global variables:
-int val = 0;
+bool val = LOW;
+bool val1 = LOW;
+bool val2 = LOW;
+bool val3 = LOW;
+bool val4 = LOW;
+
+unsigned long now, motion_start_time;
+
 bool motionState = false; // We start with no motion detected.
 
 typedef enum {
@@ -30,6 +41,10 @@ typedef enum {
 
 ledState_t ledState;
 
+// functions:
+void motion_sensor();
+ledState_t getSerialCommand();
+
 // external functions
 extern void led_setup();
 extern void led_run();
@@ -39,9 +54,13 @@ extern void led_run();
 func_ptr_t ledPlan;
 
 void setup() {  
+  motion_start_time = 0;
   // Configure the pins as input or output:
   pinMode(ledPin, OUTPUT);
-  pinMode(pirPin, INPUT);
+  pinMode(pirPin1, INPUT);
+  pinMode(pirPin2, INPUT);
+  pinMode(pirPin3, INPUT);
+  pinMode(pirPin4, INPUT);
   
   Serial.begin(9600); // open the serial port at 9600 bps
   delay(300);
@@ -50,19 +69,26 @@ void setup() {
   // put your setup code here, to run once:
   ledState = LED_IDLE;
   led_setup();        // init led stuff
-  ledPlan = flow; // choose first LED plan
+  ledPlan = back_flow; // choose first LED plan
 }
 
 void loop() { 
+  now = millis();
   // poll motion sensor
   motion_sensor();
-  if (motionState) {
+  if ((LED_IDLE == ledState) && (true == motionState)) {
     ledState = LED_SHOW;
-  } else {
-    ledState = LED_IDLE;
+    motion_start_time = now;
+    DEBUG_PRINTLN("Start excitment");
   }
-  delay(DELAY);
-  
+
+  // Turn off led show after MOTION_TIMEOUT millisec
+  if ((LED_SHOW == ledState) && (now-motion_start_time > MOTION_TIMEOUT)) {
+    ledState = LED_IDLE;
+    motionState = false;
+    DEBUG_PRINTLN("End excitment");
+  }
+
   #ifdef DEBUG
   ledState = getSerialCommand();
   #endif
@@ -74,23 +100,23 @@ void loop() {
   
   switch (ledState) {
     case LED_IDLE:
-      ledPlan = flow; //sawtooth; // flow;
+      ledPlan = back_flow; //sawtooth; // flow;
       break;
     case LED_SHOW:
       ledPlan = rainbow;
       break;
-    case LED_EASTER:
-      ledPlan = confetti;
-      break;
-    case LED_FUN:
-      ledPlan = sinelon;
-      break;
-    default:
-      ledPlan = rainbowWithGlitter;
-      break;
+//    case LED_EASTER:
+//      ledPlan = confetti;
+//      break;
+//    case LED_FUN:
+//      ledPlan = sinelon;
+//      break;
+//    default:
+//      ledPlan = rainbowWithGlitter;
+//      break;
   }
-  DEBUG_PRINT("ledState = ");
-  DEBUG_PRINTLN(ledState);
+//  DEBUG_PRINT("ledState = ");
+//  DEBUG_PRINTLN(ledState);
   
   // run current LED plan
   led_run(ledPlan);
@@ -113,15 +139,30 @@ ledState_t getSerialCommand() {
 
 void motion_sensor() {
   // Read out the pirPin and store as val:
-  val = digitalRead(pirPin);
+//  val = digitalRead(pirPin1) || digitalRead(pirPin2) || digitalRead(pirPin3) || digitalRead(pirPin4);
+  val1 = digitalRead(pirPin1);
+  val2 = digitalRead(pirPin2);
+  val3 = digitalRead(pirPin3);
+  val4 = digitalRead(pirPin4);
 
+//  if (val1) {DEBUG_PRINT("val1 = "); DEBUG_PRINTLN(val1);}
+//  if (val2) {DEBUG_PRINT("val2 = "); DEBUG_PRINTLN(val2);}
+//  if (val3) {DEBUG_PRINT("val3 = "); DEBUG_PRINTLN(val3);}
+//  if (val4) {DEBUG_PRINT("val4 = "); DEBUG_PRINTLN(val4);}
+
+//  DEBUG_PRINT("val1 = "); DEBUG_PRINTLN(val1);
+//  DEBUG_PRINT("val2 = "); DEBUG_PRINTLN(val2);
+//  DEBUG_PRINT("val3 = "); DEBUG_PRINTLN(val3);
+//  DEBUG_PRINT("val4 = "); DEBUG_PRINTLN(val4);
+  
+  val = (val1 or val2 or val3 or val4) ? HIGH : LOW;
   // If motion is detected (pirPin = HIGH), do the following:
   if (val == HIGH) {
     digitalWrite(ledPin, HIGH); // Turn on the on-board LED.
 
     // Change the motion state to true (motion detected):
     if (motionState == false) {
-      Serial.println("Motion detected!");
+//      Serial.println("Motion detected!");
       motionState = true;
     }
   }
@@ -132,7 +173,7 @@ void motion_sensor() {
 
     // Change the motion state to false (no motion):
     if (motionState == true) {
-      Serial.println("Motion ended!");
+//      Serial.println("Motion ended!");
       motionState = false;
     }
   }

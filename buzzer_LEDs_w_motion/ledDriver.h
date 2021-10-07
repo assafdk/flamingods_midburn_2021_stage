@@ -19,7 +19,7 @@ FASTLED_USING_NAMESPACE
 #warning "Requires FastLED 3.1 or later; check github for latest code."
 #endif
 
-#define DATA_PIN    3
+#define DATA_PIN    2
 //#define CLK_PIN   4
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
@@ -39,16 +39,17 @@ void led_run(func_ptr_t);
 void nextPattern();
 
 // --- LED plan functions ---
-void rainbow();
+void rainbow();   // good for the flamingo
 void rainbowWithGlitter();
 void addGlitter(fract8);
-void confetti();
-void sinelon();
-void bpm();
-void juggle();
+void confetti();  // gentle
+void sinelon();   // red directional spread pixels
+void bpm();       // rainbow that runs back and forth
+void juggle();    // lots of different colors running (sin waves on top of on another?)
 void runway();
 void trail();
 void flow();
+void back_flow();
 void sawtooth();
 void all_white();
 
