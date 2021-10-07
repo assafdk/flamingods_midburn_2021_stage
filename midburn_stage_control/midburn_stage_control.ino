@@ -48,7 +48,7 @@ typedef enum {
   #define SHOW_SMOKE_REPEAT_TIME    40000
   
   //#define SHOW_BUBBLE_DURATION    10000
-  #define SHOW_TIMEOUT_MS           (60000*6) // 6 minutes
+  #define SHOW_TIMEOUT_MS           (60000*1) // 1 minute timeout in debug
   
   #define EASTER_ENABLE_TIME        (SHOW_SONG_PLAY_TIME)
   #define EASTER_SMOKE_DURATION     4000    
@@ -66,7 +66,7 @@ typedef enum {
   #define SHOW_SMOKE_REPEAT_TIME    40000
   
   //#define SHOW_BUBBLE_DURATION    10000
-  #define SHOW_TIMEOUT_MS           (60000*6) // 6 minutes
+  #define SHOW_TIMEOUT_MS           (60000*6) // 6 minutes show timeout
   
   #define EASTER_ENABLE_TIME        (SHOW_SONG_PLAY_TIME)
   #define EASTER_SMOKE_DURATION     4000    
@@ -92,7 +92,7 @@ typedef enum {
 #define COLOR_LIGHTS_1      9
 #define COLOR_LIGHTS_2      7
 #define BUBBLE_MACHINE      10
-#define SMOKE_MACHINE       5 // new
+#define SMOKE_MACHINE       5
 #define FLICKERS            6
 //#define LED_CONTROL_PIN_1   2
 //#define LED_CONTROL_PIN_2   3
@@ -458,7 +458,6 @@ state_t get_new_state(state_t prev_state, event_t event)
   }
   
   if ((IDLE_STATE != prev_state) && (SHOW_TIMEOUT_EVENT == event)) {
-      songPlaying = false;
       return IDLE_STATE; }
           
   switch (prev_state) {
@@ -499,6 +498,7 @@ void transition_output(state_t prev_state, state_t cur_state, event_t event)
 
   if ((IDLE_STATE != prev_state) && (SHOW_TIMEOUT_EVENT == event)) {
     songPlaying = false;
+    idle_setup();
     return; }
    
   switch (prev_state) {
@@ -555,7 +555,7 @@ event_t getEvent()
   }
 
   // Timeout event (SHOW): check if we're too long in SHOW_STATE
-  if ((SHOW_STATE == cur_state) && (now-showStartTime > SHOW_TIMEOUT_MS)) {
+  if ((IDLE_STATE != cur_state) && (now-showStartTime > SHOW_TIMEOUT_MS)) {
     return SHOW_TIMEOUT_EVENT;
   }
 
