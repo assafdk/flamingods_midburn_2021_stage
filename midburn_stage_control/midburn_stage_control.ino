@@ -474,6 +474,8 @@ state_t get_new_state(state_t prev_state, event_t event)
     case EASTER_STATE:
         if (EASTER_TIMEOUT_EVENT == event) {
           return SHOW_STATE; }
+        if ((DOUBLE_CLICK == event) || (TRIPPLE_CLICK == event)) {
+          return SHOW_STATE; }
         break;
     default:
         return prev_state;
@@ -518,6 +520,10 @@ void transition_output(state_t prev_state, state_t cur_state, event_t event)
       break;
       
     case EASTER_STATE:
+      if ((DOUBLE_CLICK == event) || (TRIPPLE_CLICK == event)) {
+          Serial.print(SERIAL_PLAY_SONG);
+          songPlaying = true; 
+          }
       if (LONG_TAP == event) {
           easterLongFlag = true;
           }
