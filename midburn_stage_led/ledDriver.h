@@ -39,12 +39,12 @@ void led_run(func_ptr_t);
 void nextPattern();
 
 // --- LED plan functions ---
-void rainbow();
+void rainbow();   // good for the flamingo
 void rainbowWithGlitter();
 void addGlitter(fract8);
-void confetti();  // gentle
+void confetti();  // gentle - (Lior asked this for EASTER mode)
 void sinelon();   // red directional spread pixels
-void bpm();       // rainbow that runs back and forth
+void bpm();       // rainbow that runs back and forth (we used it in Nati Burn)
 void juggle();    // lots of different colors running (sin waves on top of on another?)
 void runway();
 void trail();
