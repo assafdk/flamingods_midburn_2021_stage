@@ -41,18 +41,19 @@ void nextPattern();
 // --- LED plan functions ---
 void rainbow();   // good for the flamingo
 void rainbowWithGlitter();
-void flickering_rainbow();
+void flickering_rainbow(); // doesn't work -- debug it
 void addGlitter(fract8);
 void confetti();  // gentle
 void sinelon();   // red directional spread pixels
-void bpm();       // rainbow that runs back and forth
-void juggle();    // lots of different colors running (sin waves on top of on another?)
+void bpm();       // rainbow that runs back and forth - Dima likes it for Flamingo party
+void juggle();    // lots of different colors running (sin waves on top of on another?) - Dima likes it for Flamingo party
 void runway();
 void trail();
 void flow();
 void back_flow();
 void sawtooth();
 void all_white();
+void all_pink();
 void led_multiplan();
 
 #endif

@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include "ledDriver.h"
 
-#define DEBUG
+//#define DEBUG
 #define jumperPin 8
 #define ledPin 13
 
@@ -91,16 +91,17 @@ void loop() {
     case LED_IDLE:
       // jumper is disconnected
       EVERY_N_SECONDS( 1 ) { DEBUG_PRINTLN("LED_IDLE"); }
-      ledPlan = rainbow; //sawtooth; // flow;
+//      ledPlan = rainbow; //sawtooth; // flow;
+      ledPlan = all_pink;
       // run current LED plan
       led_run(ledPlan);
       break;
     case LED_FUN:
       // jumper is connected
       EVERY_N_SECONDS( 1 ) { DEBUG_PRINTLN("LED_FUN"); }
-      ledPlan = flickering_rainbow;;
-      led_run(ledPlan);
-      //led_multiplan();
+      //ledPlan = flickering_rainbow;;
+      //led_run(juggle);
+      led_multiplan();
       break;
   }
   EVERY_N_SECONDS( 1 ) { DEBUG_PRINT("ledState = "); DEBUG_PRINTLN(ledState);}

@@ -74,6 +74,7 @@ void rainbow()
 void rainbowWithGlitter() 
 {
   // built-in FastLED rainbow, plus some random sparkly glitter
+  DEBUG_PRINTLN("rainbowWithGlitter()");
   rainbow();
   addGlitter(80);
 }
@@ -160,6 +161,7 @@ void runway() {
 
 void trail() { 
   int i;
+  DEBUG_PRINTLN("trail()");
   for (i=1;i<NUM_LEDS;i++){
     leds[i] = CRGB::Red;
     leds[i-1] = CRGB::Black;
@@ -175,7 +177,8 @@ void trail() {
 void flow() { 
   static uint8_t hue = 0;
   static int cur_led = 0;
-  
+
+  DEBUG_PRINTLN("flow()");
   // slide the led in one direction
   if(cur_led < 0) {cur_led = NUM_LEDS-1;}
   leds[cur_led--] = CHSV(hue++, 255, 255);
@@ -185,6 +188,7 @@ void flow() {
 void back_flow() { 
   static uint8_t hue = 0;
   static int cur_led = 0;
+  DEBUG_PRINTLN("back_flow()");
   // First slide the led in one direction
     if(cur_led > NUM_LEDS) {cur_led = 0;}
     leds[cur_led++] = CHSV(hue++, 255, 255);
@@ -199,6 +203,7 @@ void back_flow() {
 void sawtooth() { 
   static uint8_t hue = 0;
   // beat8 creates a sawtooth shape
+  DEBUG_PRINTLN("sawtooth()");
   int pos = map(beat8(40,0),0,255,0,NUM_LEDS-1);
   leds[pos] = CHSV(hue, 255, 255);
 
@@ -248,4 +253,23 @@ void all_white() {
     FastLED.show();
   }
 //  delay(5000);
+}
+
+void all_pink() {
+DEBUG_PRINTLN("all_pink()");
+//CRGB(BLUE,RED,GREEN)
+//fill_solid( leds, NUM_LEDS, CRGB(255,20,147));
+//fill_solid( leds, NUM_LEDS, CRGB(146,255,20));
+//fill_solid( leds, NUM_LEDS, CRGB(105,255,180));
+//fill_solid( leds, NUM_LEDS, CRGB(50,255,0)); // Pink Barbie
+//fill_solid( leds, NUM_LEDS, CRGB(25,255,0)); // Pink Flamingo (Magenta)
+fill_solid( leds, NUM_LEDS, CRGB(25,255,10)); // Pink Dima
+//fill_solid( leds, NUM_LEDS, CRGB(50,218,24)); // Purple
+//fill_solid( leds, NUM_LEDS, CRGB(20,255,110)); // Purple 
+
+//int i;
+//  for (i=1;i<NUM_LEDS;i++){
+//    leds[i] = CRGB::HotPink;
+////    FastLED.show();
+//  }
 }
