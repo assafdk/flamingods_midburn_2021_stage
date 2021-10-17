@@ -5,4 +5,4 @@ The stage is operated using a single push button.
 
 This repo contains the Arduino code for controlling the state machine, relays ( controlling the appliances), LEDs and music.
 
-Yay!!
+Yay!!!
