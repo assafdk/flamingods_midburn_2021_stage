@@ -11,6 +11,8 @@
   #define DEBUG_PRINTLN(x)
 #endif
 
+bool solid_color_flag = false;
+int delay_between_plans;
 CRGB leds[NUM_LEDS];
 
 void led_setup() {
@@ -27,7 +29,7 @@ void led_setup() {
 
 // List of patterns to cycle through.  Each is defined as a separate function below.
 typedef void (*SimplePatternList[])();
-SimplePatternList gPatterns = { flow, confetti, sinelon, juggle, bpm };
+SimplePatternList gPatterns = {random_solid, flow, all_pink, rainbow}; //sinelon, confetti, juggle, bpm
 //SimplePatternList gPatterns = { confetti };//, rainbowWithGlitter, confetti, sinelon, juggle, bpm };
 
 uint8_t gCurrentPatternNumber = 0; // Index number of which pattern is current
@@ -53,7 +55,11 @@ void led_multiplan()
 
   // do some periodic updates
   EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
-  EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
+  // EVERY_N_SECONDS( 120 ) { nextPattern(); } // change patterns periodically
+  delay_between_plans = random(2*60,5*60); // RANDOM DEALAY (2-5 MINUTES)
+  //delay_between_plans = 3;
+  EVERY_N_SECONDS( delay_between_plans ) { nextPattern(); solid_color_flag = false; } // change patterns periodically
+  
 }
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
@@ -74,6 +80,7 @@ void rainbow()
 void rainbowWithGlitter() 
 {
   // built-in FastLED rainbow, plus some random sparkly glitter
+  DEBUG_PRINTLN("rainbowWithGlitter()");
   rainbow();
   addGlitter(80);
 }
@@ -160,6 +167,7 @@ void runway() {
 
 void trail() { 
   int i;
+  DEBUG_PRINTLN("trail()");
   for (i=1;i<NUM_LEDS;i++){
     leds[i] = CRGB::Red;
     leds[i-1] = CRGB::Black;
@@ -175,7 +183,8 @@ void trail() {
 void flow() { 
   static uint8_t hue = 0;
   static int cur_led = 0;
-  
+
+  DEBUG_PRINTLN("flow()");
   // slide the led in one direction
   if(cur_led < 0) {cur_led = NUM_LEDS-1;}
   leds[cur_led--] = CHSV(hue++, 255, 255);
@@ -185,6 +194,7 @@ void flow() {
 void back_flow() { 
   static uint8_t hue = 0;
   static int cur_led = 0;
+  DEBUG_PRINTLN("back_flow()");
   // First slide the led in one direction
     if(cur_led > NUM_LEDS) {cur_led = 0;}
     leds[cur_led++] = CHSV(hue++, 255, 255);
@@ -199,6 +209,7 @@ void back_flow() {
 void sawtooth() { 
   static uint8_t hue = 0;
   // beat8 creates a sawtooth shape
+  DEBUG_PRINTLN("sawtooth()");
   int pos = map(beat8(40,0),0,255,0,NUM_LEDS-1);
   leds[pos] = CHSV(hue, 255, 255);
 
@@ -248,4 +259,44 @@ void all_white() {
     FastLED.show();
   }
 //  delay(5000);
+}
+
+void all_pink() {
+DEBUG_PRINTLN("all_pink()");
+//CRGB(BLUE,RED,GREEN)
+//fill_solid( leds, NUM_LEDS, CRGB(255,20,147));
+//fill_solid( leds, NUM_LEDS, CRGB(146,255,20));
+//fill_solid( leds, NUM_LEDS, CRGB(105,255,180));
+//fill_solid( leds, NUM_LEDS, CRGB(50,255,0)); // Pink Barbie
+//fill_solid( leds, NUM_LEDS, CRGB(25,255,0)); // Pink Flamingo (Magenta)
+fill_solid( leds, NUM_LEDS, CRGB(25,255,10)); // Pink Dima
+//fill_solid( leds, NUM_LEDS, CRGB(50,218,24)); // Purple
+//fill_solid( leds, NUM_LEDS, CRGB(20,255,110)); // Purple 
+
+//int i;
+//  for (i=1;i<NUM_LEDS;i++){
+//    leds[i] = CRGB::HotPink;
+////    FastLED.show();
+//  }
+}
+
+void random_solid() {
+int red=0;
+int green=0; 
+int blue=0;
+int min_color=30;
+int max_color=200;
+
+ DEBUG_PRINTLN("all_pink()");
+//CRGB(BLUE,RED,GREEN)
+
+if (solid_color_flag) { return; }
+
+while ((red+green+blue < min_color) or (red+green+blue > max_color)){
+  red = random(0,255);
+  green = random(0,255);
+  blue = random(0,255);
+  }
+solid_color_flag = true;
+fill_solid( leds, NUM_LEDS, CRGB(blue,red,green));
 }
