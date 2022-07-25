@@ -1,4 +1,4 @@
-//#define DEBUG
+#define DEBUG
 #define I2C
 
 #include <FastLED.h>
@@ -88,7 +88,7 @@ void loop() {
       ledPlan = rainbow;
       break;
     case LED_EASTER: // 2
-      ledPlan = bpm;
+      ledPlan = confetti;
       break;
     case LED_FUN: // 3
       ledPlan = juggle;

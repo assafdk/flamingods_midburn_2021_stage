@@ -92,7 +92,11 @@ void loop() {
       // jumper is disconnected
       EVERY_N_SECONDS( 1 ) { DEBUG_PRINTLN("LED_IDLE"); }
 //      ledPlan = rainbow; //sawtooth; // flow;
+<<<<<<< HEAD
       ledPlan = bpm;
+=======
+      ledPlan = all_pink;
+>>>>>>> 3d9cec259824c4588052b90225f9a5f384651ebf
       // run current LED plan
       led_run(ledPlan);
       break;

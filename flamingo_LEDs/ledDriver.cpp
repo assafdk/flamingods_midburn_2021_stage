@@ -279,6 +279,7 @@ fill_solid( leds, NUM_LEDS, CRGB(25,255,10)); // Pink Dima
 ////    FastLED.show();
 //  }
 }
+<<<<<<< HEAD
 
 void random_solid() {
 int red=0;
@@ -300,3 +301,5 @@ while ((red+green+blue < min_color) or (red+green+blue > max_color)){
 solid_color_flag = true;
 fill_solid( leds, NUM_LEDS, CRGB(blue,red,green));
 }
+=======
+>>>>>>> 3d9cec259824c4588052b90225f9a5f384651ebf

@@ -54,7 +54,10 @@ void back_flow();
 void sawtooth();
 void all_white();
 void all_pink();
+<<<<<<< HEAD
 void random_solid();
+=======
+>>>>>>> 3d9cec259824c4588052b90225f9a5f384651ebf
 void led_multiplan();
 
 #endif
