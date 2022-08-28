@@ -1,6 +1,5 @@
-//#define DEBUG
+#define DEBUG
 #define I2C
-
 #include "pushButtonDriver.h"
 #include <Wire.h>
 
@@ -15,7 +14,9 @@ extern unsigned long now; // this is the time the button is pushed
 #endif
 
 // if using I2C
+#ifdef I2C
 #define I2C_SLAVE_ADDR 9
+#endif
 
 typedef enum {
   IDLE_STATE,
@@ -79,35 +80,37 @@ typedef enum {
 #define ON  HIGH
 #define OFF LOW
 
-//// --- pins definition MEGA ---
-//#define WHITE_LIGHTS        31
-//#define COLOR_LIGHTS_1      33
-//#define COLOR_LIGHTS_2      35
-//#define BUBBLE_MACHINE      37
-//#define SMOKE_MACHINE       39
-//#define FLICKERS            41
-//#define WHITE_LIGHTS_BACKUP        43
-//#define COLOR_LIGHTS_1_BACKUP      45
-//#define COLOR_LIGHTS_2_BACKUP      47
-//#define FLICKERS_BACKUP            49
-//// ---- Bluetooth MEGA ----
-//#define BLUETOOTH_SERIAL_RX   XX
-//#define BLUETOOTH_SERIAL_TX   XX
+// --- pins definition MEGA ---
+#define WHITE_LIGHTS        31
+#define COLOR_LIGHTS_1      33
+#define COLOR_LIGHTS_2      35
+#define BUBBLE_MACHINE      37
+#define SMOKE_MACHINE       39
+#define FLICKERS            41
+#define WHITE_LIGHTS_BACKUP        43
+#define COLOR_LIGHTS_1_BACKUP      45
+#define COLOR_LIGHTS_2_BACKUP      47
+#define FLICKERS_BACKUP            49
+#define BluetoothSerial Serial1
 
-// --- pins definition UNO ---
-#define WHITE_LIGHTS        8
-#define COLOR_LIGHTS_1      9
-#define COLOR_LIGHTS_2      7
-#define BUBBLE_MACHINE      10
-#define SMOKE_MACHINE       5
-#define FLICKERS            6
-//#define LED_CONTROL_PIN_1   2
-//#define LED_CONTROL_PIN_2   3
-
-#define WHITE_LIGHTS_BACKUP        2
-#define COLOR_LIGHTS_1_BACKUP      3
-#define COLOR_LIGHTS_2_BACKUP      4
-#define FLICKERS_BACKUP            11
+// // --- pins definition UNO ---
+// #define WHITE_LIGHTS        8
+// #define COLOR_LIGHTS_1      9
+// #define COLOR_LIGHTS_2      7
+// #define BUBBLE_MACHINE      10
+// #define SMOKE_MACHINE       5
+// #define FLICKERS            6
+// //#define LED_CONTROL_PIN_1   2
+// //#define LED_CONTROL_PIN_2   3
+// #define WHITE_LIGHTS_BACKUP        2
+// #define COLOR_LIGHTS_1_BACKUP      3
+// #define COLOR_LIGHTS_2_BACKUP      4
+// #define FLICKERS_BACKUP            11
+// // -------- Bluetooth UNO --------
+// #include <SoftwareSerial.h>
+// #define BLUETOOTH_SERIAL_RX   A5
+// #define BLUETOOTH_SERIAL_TX   A4
+// SoftwareSerial BluetoothSerial(BLUETOOTH_SERIAL_RX, BLUETOOTH_SERIAL_TX); // RX | TX 
 
 #define SERIAL_PLAY_SONG  'P' // Play
 #define SERIAL_STOP_SONG  'S' // Stop
@@ -116,17 +119,15 @@ typedef enum {
 #define SERIAL_VOCAL_WOW_FX     'V' // Vocal wow effect for easter
 #define SERIAL_ZOTI_WOW_FX     'Z' // Vocal wow effect for easter
 
-// -------- Bluetooth UNO --------
-#define BLUETOOTH_SERIAL_RX   A0
-#define BLUETOOTH_SERIAL_TX   A1
+#define PC_BAUD_RATE 9600
 
-#define BT_MAX_MESSAGE_LEN 64
+// -------- Bluetooth --------
+#define BT_MAX_MESSAGE_LEN 8
 #define BT_MSG_START_CHAR '{'
+#define BT_MSG_SEPERATION_CHAR ','
 #define BT_MSG_END_CHAR '}'
 #define APPLIANCE_REPORT_DELAY 3000   // send appliances status to tablet over bluetooth every APPLIANCE_REPORT_DELAY ms
-
-#include <SoftwareSerial.h>
-SoftwareSerial BluetoothSerial(BLUETOOTH_SERIAL_RX, BLUETOOTH_SERIAL_TX); // RX | TX 
+#define BT_BAUD_RATE 9600
 
 unsigned long lastAppliancesReportTime; // capturing the last time appliances status was reported over bluetooth
 static bool btMsgInProgress = false;
@@ -134,6 +135,7 @@ static bool bt_msg_ready = false;
 static char bt_message[BT_MAX_MESSAGE_LEN] = {'\0'};
 static int bt_indx=0;
 static char bt_inByte;
+
 // --------------------------------
 
 // -- functions declaration --
@@ -198,7 +200,10 @@ event_t btnEvent;
 // ------------------------ Main ------------------------
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600); // open the serial port at 9600 bps
+  Serial.begin(PC_BAUD_RATE); // open the serial port at 9600 bps
+  delay(1000);
+  BluetoothSerial.begin(BT_BAUD_RATE);
+  delay(1000);
   DEBUG_PRINTLN("DEBUG MODE");
   
   setupLedCom(); // I2C or direct
@@ -718,6 +723,20 @@ void setupLedCom() { // I2C or direct
 }
 
 // ----------- Bluetooth functions -----------
+
+void DEBUG_recv_BT_msg(){
+  char c;
+  //from bluetooth to Terminal. 
+  if (BluetoothSerial.available()) { 
+    c=BluetoothSerial.read();
+    Serial.write(c);}
+  //from termial to bluetooth 
+  if (Serial.available()){ 
+    c=Serial.read();
+    BluetoothSerial.write(c);
+  }
+}
+
 void recv_BT_msg() {
   // Check if there's a new Bluetooth message
   while (BluetoothSerial.available()>0 && bt_msg_ready == false) {
@@ -755,18 +774,27 @@ void recv_BT_msg() {
 
 
 event_t parse_BT_msg() {   // Parse incoming BT message
-    char appliance_type, appliance_number, appliance_cmd;
+    char appliance_type;
+    int appliance_number, appliance_cmd;
     bt_indx = 0;
     int dimmer_value, led_plan_input;
     event_t bt_event;
     
     // BT cmd structure should be "{key}={value}" i.e. {BB=P},{A0=1},{DM=76}
      appliance_type = bt_message[0];      // A
-     appliance_number = bt_message[1];    // 0
-     appliance_cmd = bt_message[3];       // 1 (bt_message[2] is '=')
-     
+     appliance_number = bt_message[1]-'0';    // 0
+     if (bt_message[2] != '=')
+     { // {A31=0} appliance numer has 2 digits
+       appliance_number = appliance_number*10 + (bt_message[2]-'0');
+       appliance_cmd = bt_message[4]-'0';
+     }else{
+       appliance_cmd = bt_message[3]-'0';       // 1 (bt_message[2] is '=')
+     }
      switch(appliance_type){
           case 'B': // i.e. B=P
+              DEBUG_PRINT("appliance_type");
+              DEBUG_PRINT(": ");
+              DEBUG_PRINTLN(appliance_type);
               // create button event based on appliance_cmd
               DEBUG_PRINT("Button event");
               DEBUG_PRINT(": ");
@@ -782,6 +810,15 @@ event_t parse_BT_msg() {   // Parse incoming BT message
               DEBUG_PRINTLN("Unknown button event");              
               break;
           case 'A': // i.e. A0=1
+              DEBUG_PRINT("appliance_type");
+              DEBUG_PRINT(": ");
+              DEBUG_PRINTLN(appliance_type);
+              DEBUG_PRINT("appliance_number");
+              DEBUG_PRINT(": ");
+              DEBUG_PRINTLN(appliance_number);
+              DEBUG_PRINT("appliance_cmd");
+              DEBUG_PRINT(": ");
+              DEBUG_PRINTLN(appliance_cmd);
               // toggle appliance_number to state appliance_command
               relayToggle(appliance_number,appliance_cmd);
               DEBUG_PRINT("Turn ");
@@ -791,11 +828,17 @@ event_t parse_BT_msg() {   // Parse incoming BT message
               break;
            case 'D': // i.e. DM=33, set dimmer to 33%
               // set dimmer to 33%
+              DEBUG_PRINT("appliance_type");
+              DEBUG_PRINT(": ");
+              DEBUG_PRINTLN(appliance_type);
               dimmer_value = atoi(&bt_message[3]);
               DEBUG_PRINT("Set dimmer to: ");
               DEBUG_PRINTLN(dimmer_value);
               break;
            case 'L': // i.e. LD=3
+              DEBUG_PRINT("appliance_type");
+              DEBUG_PRINT(": ");
+              DEBUG_PRINTLN(appliance_type);
               // set LEDs to plan 3
               led_plan_input = atoi(&bt_message[3]);
               if ((led_plan_input < 0) or (led_plan_input >= LED_PLANS_COUNT))
@@ -805,6 +848,9 @@ event_t parse_BT_msg() {   // Parse incoming BT message
               DEBUG_PRINTLN(led_plan_input);
               break;
            default:
+              DEBUG_PRINT("appliance_type");
+              DEBUG_PRINT(": ");
+              DEBUG_PRINTLN(appliance_type);
               DEBUG_PRINT("Hey I recieved this weird message on bluetooth: ");
               DEBUG_PRINTLN(bt_message);
               break;     
@@ -814,20 +860,29 @@ event_t parse_BT_msg() {   // Parse incoming BT message
 
 void report_appliances_status() {
   DEBUG_PRINTLN("Sending appliances status to tablet");
+  BluetoothSerial.print(BT_MSG_START_CHAR);
   BluetoothSerial.print("S=");
   BluetoothSerial.print(smokeMachineON);
+  BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
   BluetoothSerial.print("B=");
   BluetoothSerial.print(bubbleMachineON);
+  BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
   BluetoothSerial.print("W=");
   BluetoothSerial.print(whiteLightsON);
+  BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
   BluetoothSerial.print("C1=");
   BluetoothSerial.print(colorLights_1_ON);
+  BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
   BluetoothSerial.print("C2=");
   BluetoothSerial.print(colorLights_2_ON);
+  BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
   BluetoothSerial.print("F=");
   BluetoothSerial.print(flickersON);
+  BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
   BluetoothSerial.print("P=");
   BluetoothSerial.print(songPlaying);
+  BluetoothSerial.print(BT_MSG_END_CHAR);
+  BluetoothSerial.print("\r\n");
   return;
 
 //  S=smokeMachineON
