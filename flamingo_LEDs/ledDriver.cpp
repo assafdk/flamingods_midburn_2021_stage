@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "ledDriver.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
   #define DEBUG_PRINT(x)  Serial.print (x)

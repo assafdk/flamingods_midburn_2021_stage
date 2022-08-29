@@ -23,6 +23,7 @@ FASTLED_USING_NAMESPACE
 //#define CLK_PIN   4
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
+// #define COLOR_ORDER RGB
 #define NUM_LEDS    (60*5)
 
 #define BRIGHTNESS          255
@@ -56,5 +57,6 @@ void all_white();
 void all_pink();
 void random_solid();
 void led_multiplan();
+void solid_color(int red, int green, int blue);
 
 #endif
