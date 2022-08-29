@@ -279,27 +279,30 @@ fill_solid( leds, NUM_LEDS, CRGB(25,255,10)); // Pink Dima
 ////    FastLED.show();
 //  }
 }
-<<<<<<< HEAD
+
+void solid_color(int red, int green, int blue) {
+  fill_solid(leds, NUM_LEDS, CRGB(red,green,blue));
+  FastLED.show();
+  return;
+}
 
 void random_solid() {
-int red=0;
-int green=0; 
-int blue=0;
-int min_color=30;
-int max_color=200;
+  int red=0;
+  int green=0; 
+  int blue=0;
+  int min_color=30;
+  int max_color=200;
 
- DEBUG_PRINTLN("all_pink()");
-//CRGB(BLUE,RED,GREEN)
+  DEBUG_PRINTLN("all_pink()");
+  //CRGB(BLUE,RED,GREEN)
 
-if (solid_color_flag) { return; }
+  if (solid_color_flag) { return; }
 
-while ((red+green+blue < min_color) or (red+green+blue > max_color)){
-  red = random(0,255);
-  green = random(0,255);
-  blue = random(0,255);
-  }
-solid_color_flag = true;
-fill_solid( leds, NUM_LEDS, CRGB(blue,red,green));
+  while ((red+green+blue < min_color) or (red+green+blue > max_color)){
+    red = random(0,255);
+    green = random(0,255);
+    blue = random(0,255);
+    }
+  solid_color_flag = true;
+  fill_solid( leds, NUM_LEDS, CRGB(blue,red,green));
 }
-=======
->>>>>>> 3d9cec259824c4588052b90225f9a5f384651ebf
