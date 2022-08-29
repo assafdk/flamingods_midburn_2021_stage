@@ -144,7 +144,12 @@ event_t parse_BT_msg();
 void report_appliances_status();
 
 // -------- LoRa --------
-#define LORA_BUFF_SIZE 16   // no reason why I chose 16. has to be >7
+#define LORA_BUFF_SIZE  16      // no reason why I chose 16. has to be >7
+#define LORA_MSG_IDLE   "{10}"  // {TC} - Type=1 Command=0 (0=Idle)
+#define LORA_MSG_SHOW   "{11}"  // {TC} - Type=1 Command=0 (1=Show)
+#define LORA_MSG_EASTER "{12}"  // {TC} - Type=1 Command=0 (2=Easter)
+#define LORA_MSG_LEN    4
+
 char LoRa_buff[LORA_BUFF_SIZE] = {0};
 void LoRa_send(char* buff,int len);
 void LoRa_recv(char* buff,int len);
@@ -327,8 +332,9 @@ void loop() {
 // ----------- state functions -----------
 // -- IDLE STATE --
 void idle_setup() {
-  ledControl(LED_IDLE);
   DEBUG_PRINTLN("idle_setup()");
+  ledControl(LED_IDLE);
+  LoRa_send(LORA_MSG_IDLE, LORA_MSG_LEN);
   DEBUG_PRINTLN("IDLE SETUP - STOP SONG");
   turnAllRelaysOff();
   return;
@@ -344,7 +350,7 @@ void idle_state()
 bool showSetupFlag = false;
 void show_setup() {
   ledControl(LED_SHOW);
-  
+  LoRa_send(LORA_MSG_SHOW, LORA_MSG_LEN);
   DEBUG_PRINTLN("show_setup()");
   showSetupFlag = true;
   showTime = 0;
@@ -430,6 +436,7 @@ void show_state()
 // -- EASTER STATE --
 void easter_setup() {
   DEBUG_PRINTLN("easter_setup()");
+  LoRa_send(LORA_MSG_EASTER, LORA_MSG_LEN);
   easterStartTime = now;
   relayToggle(WHITE_LIGHTS,OFF); relayToggle(WHITE_LIGHTS_BACKUP,OFF);
   relayToggle(COLOR_LIGHTS_1,OFF); relayToggle(COLOR_LIGHTS_1_BACKUP,OFF);
