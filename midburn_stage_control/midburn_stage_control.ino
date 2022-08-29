@@ -121,6 +121,7 @@ typedef enum {
 
 #define PC_BAUD_RATE 9600
 
+// -------- COMMUNICATION --------
 // -------- Bluetooth --------
 #define BT_MAX_MESSAGE_LEN 8
 #define BT_MSG_START_CHAR '{'
@@ -129,12 +130,25 @@ typedef enum {
 #define APPLIANCE_REPORT_DELAY 3000   // send appliances status to tablet over bluetooth every APPLIANCE_REPORT_DELAY ms
 #define BT_BAUD_RATE 9600
 
+#define FLAMINGO_MSG_LEN  7   // msg format to flamingo is TPRGBYW: 0101100
 unsigned long lastAppliancesReportTime; // capturing the last time appliances status was reported over bluetooth
 static bool btMsgInProgress = false;
 static bool bt_msg_ready = false;
-static char bt_message[BT_MAX_MESSAGE_LEN] = {'\0'};
+static char bt_message[BT_MAX_MESSAGE_LEN] = {0};
 static int bt_indx=0;
 static char bt_inByte;
+
+// Bluetooth functions
+void recv_BT_msg();
+event_t parse_BT_msg();
+void report_appliances_status();
+
+// -------- LoRa --------
+#define LORA_BUFF_SIZE 16   // no reason why I chose 16. has to be >7
+char LoRa_buff[LORA_BUFF_SIZE] = {0};
+void LoRa_send(char* buff,int len);
+void LoRa_recv(char* buff,int len);
+bool LoRa_RecvFlag = false;
 
 // --------------------------------
 
@@ -163,11 +177,6 @@ void ledControl(ledState_t ledState);
 void ledControl_I2C(ledState_t ledState);
 void setupLedCom();
 
-
-// Bluetooth functions
-void recv_BT_msg();
-event_t parse_BT_msg();
-void report_appliances_status();
 // ---------------------------
 
 
@@ -791,14 +800,15 @@ event_t parse_BT_msg() {   // Parse incoming BT message
        appliance_cmd = bt_message[3]-'0';       // 1 (bt_message[2] is '=')
      }
      switch(appliance_type){
-          case 'B': // i.e. B=P
+          case 'B': // i.e. B=P : Button=Play
               DEBUG_PRINT("appliance_type");
               DEBUG_PRINT(": ");
               DEBUG_PRINTLN(appliance_type);
-              // create button event based on appliance_cmd
               DEBUG_PRINT("Button event");
               DEBUG_PRINT(": ");
               DEBUG_PRINTLN(appliance_cmd);
+              
+              // create button event based on appliance_cmd
               if (SINGLE_CLICK == appliance_cmd)
                 return SINGLE_CLICK;
               if (DOUBLE_CLICK == appliance_cmd)
@@ -807,9 +817,10 @@ event_t parse_BT_msg() {   // Parse incoming BT message
                 return LONG_PRESS;
               if (SHORT_TAP == appliance_cmd)
                 return SHORT_TAP;
+              
               DEBUG_PRINTLN("Unknown button event");              
               break;
-          case 'A': // i.e. A0=1
+          case 'A': // i.e. A0=1 : Turn on pin 0
               DEBUG_PRINT("appliance_type");
               DEBUG_PRINT(": ");
               DEBUG_PRINTLN(appliance_type);
@@ -819,33 +830,50 @@ event_t parse_BT_msg() {   // Parse incoming BT message
               DEBUG_PRINT("appliance_cmd");
               DEBUG_PRINT(": ");
               DEBUG_PRINTLN(appliance_cmd);
+              
               // toggle appliance_number to state appliance_command
               relayToggle(appliance_number,appliance_cmd);
+              
               DEBUG_PRINT("Turn ");
               DEBUG_PRINT(appliance_number);
               DEBUG_PRINT(" : ");
               DEBUG_PRINTLN(appliance_cmd);
               break;
            case 'D': // i.e. DM=33, set dimmer to 33%
-              // set dimmer to 33%
               DEBUG_PRINT("appliance_type");
               DEBUG_PRINT(": ");
               DEBUG_PRINTLN(appliance_type);
+
+              // set dimmer to 33%
               dimmer_value = atoi(&bt_message[3]);
+              
               DEBUG_PRINT("Set dimmer to: ");
               DEBUG_PRINTLN(dimmer_value);
               break;
-           case 'L': // i.e. LD=3
+           case 'L': // i.e. LD=3 : set LEDs to plan 3
               DEBUG_PRINT("appliance_type");
               DEBUG_PRINT(": ");
               DEBUG_PRINTLN(appliance_type);
+              
               // set LEDs to plan 3
               led_plan_input = atoi(&bt_message[3]);
               if ((led_plan_input < 0) or (led_plan_input >= LED_PLANS_COUNT))
                 break;
               ledControl(led_plan_input);
+              
               DEBUG_PRINT("set LEDs plan: ");
               DEBUG_PRINTLN(led_plan_input);
+              break;
+            case 'F': // i.e. FC=0010011 (Flamingo Color = TPRGBYW): Send 0010011 to Flamingo using LoRa
+                      // this allows simulating the panels from the tablet app
+              if ('C' == bt_message[2]) // FC=0010011 (FC=TPRGBYW) change flamingo color
+                strncpy(LoRa_buff,&bt_message[3],FLAMINGO_MSG_LEN);
+              if ('E' == bt_message[2]) // FE=30 (FE=TPE) (Flamingo Enable = Type_msg Panel_num Enable/Disable). FE=30 disable panel 3, FE=31 enable panel 3.
+                LoRa_buff[0] = '2';
+                LoRa_buff[1] = bt_message[3];
+                LoRa_buff[2] = bt_message[4];
+                LoRa_buff[2] = 0;
+              LoRa_send(LoRa_buff,FLAMINGO_MSG_LEN);
               break;
            default:
               DEBUG_PRINT("appliance_type");
@@ -859,30 +887,47 @@ event_t parse_BT_msg() {   // Parse incoming BT message
 }
 
 void report_appliances_status() {
-  DEBUG_PRINTLN("Sending appliances status to tablet");
-  BluetoothSerial.print(BT_MSG_START_CHAR);
-  BluetoothSerial.print("S=");
-  BluetoothSerial.print(smokeMachineON);
-  BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
-  BluetoothSerial.print("B=");
-  BluetoothSerial.print(bubbleMachineON);
-  BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
-  BluetoothSerial.print("W=");
-  BluetoothSerial.print(whiteLightsON);
-  BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
-  BluetoothSerial.print("C1=");
-  BluetoothSerial.print(colorLights_1_ON);
-  BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
-  BluetoothSerial.print("C2=");
-  BluetoothSerial.print(colorLights_2_ON);
-  BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
-  BluetoothSerial.print("F=");
-  BluetoothSerial.print(flickersON);
-  BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
-  BluetoothSerial.print("P=");
-  BluetoothSerial.print(songPlaying);
-  BluetoothSerial.print(BT_MSG_END_CHAR);
-  BluetoothSerial.print("\r\n");
+  static int prevApplianceState;
+  int currApplianceState;
+  // check if anything changed from last report to BT
+  currApplianceState = 
+    smokeMachineON +
+    bubbleMachineON +
+    whiteLightsON +
+    colorLights_1_ON +
+    colorLights_2_ON +
+    flickersON +
+    songPlaying;
+  /// TODO: Maybe add backup pins flags??
+
+  if (prevApplianceState != currApplianceState)
+  {
+    prevApplianceState = currApplianceState;
+    DEBUG_PRINTLN("Sending appliances status to tablet");
+    BluetoothSerial.print(BT_MSG_START_CHAR);
+    BluetoothSerial.print("S=");
+    BluetoothSerial.print(smokeMachineON);
+    BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
+    BluetoothSerial.print("B=");
+    BluetoothSerial.print(bubbleMachineON);
+    BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
+    BluetoothSerial.print("W=");
+    BluetoothSerial.print(whiteLightsON);
+    BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
+    BluetoothSerial.print("C1=");
+    BluetoothSerial.print(colorLights_1_ON);
+    BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
+    BluetoothSerial.print("C2=");
+    BluetoothSerial.print(colorLights_2_ON);
+    BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
+    BluetoothSerial.print("F=");
+    BluetoothSerial.print(flickersON);
+    BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
+    BluetoothSerial.print("P=");
+    BluetoothSerial.print(songPlaying);
+    BluetoothSerial.print(BT_MSG_END_CHAR);
+    BluetoothSerial.print("\r\n");
+  }
   return;
 
 //  S=smokeMachineON
@@ -893,3 +938,15 @@ void report_appliances_status() {
 //  F=flickersON
 //  P=songPlaying
 }
+// ----------- Bluetooth END -----------
+
+// -------- LoRa --------
+void LoRa_send(char* buff,int len)
+{
+  return;
+}
+void LoRa_recv(char* buff,int len)
+{
+  return;
+}
+// -------- LoRa END --------
