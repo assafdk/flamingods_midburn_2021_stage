@@ -912,6 +912,9 @@ void report_appliances_status() {
     prevApplianceState = currApplianceState;
     DEBUG_PRINTLN("Sending appliances status to tablet");
     BluetoothSerial.print(BT_MSG_START_CHAR);
+    BluetoothSerial.print("State=");
+    BluetoothSerial.print(cur_state);
+    BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
     BluetoothSerial.print("S=");
     BluetoothSerial.print(smokeMachineON);
     BluetoothSerial.print(BT_MSG_SEPERATION_CHAR);
