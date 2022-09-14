@@ -16,8 +16,8 @@
 #endif
 
 //#define TIMEOUT 10000                 // someone is pressing for 10 sec?
-#define COM_COOLING_TIME  50         // I might don't want to get new data too often to prevent glitches
-#define COMMAND_HOLD_TIME  100
+#define COM_COOLING_TIME  0         // I might don't want to get new data too often to prevent glitches
+#define COMMAND_HOLD_TIME  500
 #define LORA_DATA_LENGTH   20 
 
 // Panels table
@@ -52,7 +52,7 @@ ledState_t ledState;
 unsigned long dataTimestamps[PANELS_COUNT+1] = {0};
 int panelsRGB[PANELS_ARRAY_ROWS][PANELS_ARRAY_COLUMNS]; // a table that holds the current button status of all panels 
 char incomingBuffer[LORA_DATA_LENGTH];
-bool panelEnabled[PANELS_COUNT] = {1};
+bool panelEnabled[PANELS_COUNT];
 
 int msg_type, red, green, blue;
 
@@ -68,12 +68,13 @@ void init_RGB_array();
 int parse_panel_data(char* incomingBuffer);
 void parse_stage_data(char* incomingBuffer);
 void parse_panel_enable(char* incomingBuffer);
+void enable_all_panels();
 
 // external function
 extern void led_setup();
 extern void led_run();
-bool LoRa_isDataReady() {return Serial.available();}
-void LoRa_read(char* buff) {Serial.readBytes(buff,LORA_DATA_LENGTH); return;}
+bool LoRa_isDataReady();
+void LoRa_read(String buff);
 
 // this holds a pointer to the current LED plan
 // choose a plan from LED plan functions in "ledDriver.h"
@@ -87,7 +88,7 @@ void setup() {
   
   Serial.begin(9600); // open the serial port at 9600 bps
   delay(300);
-  
+  LoRa.begin(433E6);
   DEBUG_PRINTLN("DEBUG MODE");
   // put your setup code here, to run once:
   ledState = LED_IDLE;
@@ -95,6 +96,7 @@ void setup() {
   ledPlan = bpm;  // choose first LED plan
   
   init_RGB_array();
+  enable_all_panels();
 
     //debug
   // TPRGBYW
@@ -124,9 +126,10 @@ void loop() {
   // if jumper is not connected...
   if (LoRa_isDataReady()) {           // check if LoRa has incoming data waiting to be read
     // read incoming LoRa data into buffer:
+    DEBUG_PRINTLN("");
     DEBUG_PRINTLN("new LoRa data");
     LoRa_read(incomingBuffer);
-    
+    DEBUG_PRINTLN(incomingBuffer);
     // parse LoRa message:
     msg_type = incomingBuffer[0]-'0';
     DEBUG_PRINT("msg_type: ");
@@ -134,16 +137,22 @@ void loop() {
     switch (msg_type) {
       case 0: // panel -> flamingo
               // msg = {TPRGBYW = Type Panel COLORS} Type=0
+        DEBUG_PRINT("MSG panel -> flamingo: ");
+        DEBUG_PRINTLN(incomingBuffer);
         parse_panel_data(incomingBuffer); // parse and handle recieved panel data
         update_total_RGB_values();
-        run_panel_LED_plan();
+        //run_panel_LED_plan();
         break;
       case 1: // stage -> flamingo
               // msg = {TC = Type Command} Type=1. i.e. {12} means Type=1 Command=2 (Command: 0,1,2=Idle,Show,Easter)
+          DEBUG_PRINT("MSG stage -> flamingo: ");
+          DEBUG_PRINTLN(incomingBuffer);
           parse_stage_data(incomingBuffer); // update main LED plan by what's going on on stage
         break;
       case 2: // stage (disable/enable panel) -> flamingo
               // msg = {TPE = Type Panel Enable} Type=2
+        DEBUG_PRINT("MSG Disable/Enable: ");
+        DEBUG_PRINTLN(incomingBuffer);
         parse_panel_enable(incomingBuffer);
         break;
       default:// very strange...
@@ -169,6 +178,23 @@ void init_RGB_array() {
       panelsRGB[i][j] = 0;
     }
   }
+}
+
+bool LoRa_isDataReady() {
+  return  LoRa.parsePacket();
+}
+
+
+void LoRa_read(char * buff) {
+   int i = 0;
+   while (LoRa.available()) {
+      buff[i] = LoRa.read();
+      Serial.print("current data: ");
+      Serial.println(buff[i]);
+      i++;
+   }
+   Serial.println("data from lora");
+   Serial.println(buff);
 }
 
 // parse data coming from one of the button panels
@@ -265,7 +291,7 @@ void run_panel_LED_plan() {
 
     print_panels_table();
   }
-  solid_color(red,green,blue);
+  solid_color(blue,red,green);
   return;
 }
 
@@ -379,6 +405,14 @@ void parse_panel_enable(char* incomingBuffer) {
   panelEnabled[panel_number] = enable;
   return;
 }
+
+void enable_all_panels() {
+  for (int i=0; i<PANELS_COUNT; i++)
+    panelEnabled[i] = true;
+  return;
+}
+
+
 // #ifdef DEBUG
 // ledState_t getSerialCommand() {
 //   char incomingByte;
