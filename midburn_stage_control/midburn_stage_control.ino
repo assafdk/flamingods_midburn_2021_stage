@@ -2,6 +2,7 @@
 #define I2C
 #include "pushButtonDriver.h"
 #include <Wire.h>
+#include "LoRa.h"
 
 extern unsigned long now; // this is the time the button is pushed
 
@@ -151,8 +152,8 @@ void report_appliances_status();
 #define LORA_MSG_LEN    4
 
 char LoRa_buff[LORA_BUFF_SIZE] = {0};
-void LoRa_send(char* buff,int len);
-void LoRa_recv(char* buff,int len);
+// void LoRa_send(char* buff,int len);
+void LoRa_read(char* buff,int len);
 bool LoRa_RecvFlag = false;
 
 // --------------------------------
@@ -215,9 +216,11 @@ event_t btnEvent;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(PC_BAUD_RATE); // open the serial port at 9600 bps
-  delay(1000);
+  delay(500);
   BluetoothSerial.begin(BT_BAUD_RATE);
-  delay(1000);
+  delay(500);
+  LoRa.begin(433E6);
+  delay(500);
   DEBUG_PRINTLN("DEBUG MODE");
   
   setupLedCom(); // I2C or direct
@@ -334,7 +337,8 @@ void loop() {
 void idle_setup() {
   DEBUG_PRINTLN("idle_setup()");
   ledControl(LED_IDLE);
-  LoRa_send(LORA_MSG_IDLE, LORA_MSG_LEN);
+  // LoRa_send(LORA_MSG_IDLE, LORA_MSG_LEN);
+  LoRa.write(LORA_MSG_IDLE, LORA_MSG_LEN);
   DEBUG_PRINTLN("IDLE SETUP - STOP SONG");
   turnAllRelaysOff();
   return;
@@ -350,7 +354,8 @@ void idle_state()
 bool showSetupFlag = false;
 void show_setup() {
   ledControl(LED_SHOW);
-  LoRa_send(LORA_MSG_SHOW, LORA_MSG_LEN);
+  // LoRa_send(LORA_MSG_SHOW, LORA_MSG_LEN);
+  LoRa.write(LORA_MSG_SHOW, LORA_MSG_LEN);
   DEBUG_PRINTLN("show_setup()");
   showSetupFlag = true;
   showTime = 0;
@@ -436,7 +441,8 @@ void show_state()
 // -- EASTER STATE --
 void easter_setup() {
   DEBUG_PRINTLN("easter_setup()");
-  LoRa_send(LORA_MSG_EASTER, LORA_MSG_LEN);
+  // LoRa_send(LORA_MSG_EASTER, LORA_MSG_LEN);
+  LoRa.write(LORA_MSG_SHOW, LORA_MSG_LEN);
   easterStartTime = now;
   relayToggle(WHITE_LIGHTS,OFF); relayToggle(WHITE_LIGHTS_BACKUP,OFF);
   relayToggle(COLOR_LIGHTS_1,OFF); relayToggle(COLOR_LIGHTS_1_BACKUP,OFF);
@@ -876,11 +882,14 @@ event_t parse_BT_msg() {   // Parse incoming BT message
               if ('C' == bt_message[2]) // FC=0010011 (FC=TPRGBYW) change flamingo color
                 strncpy(LoRa_buff,&bt_message[3],FLAMINGO_MSG_LEN);
               if ('E' == bt_message[2]) // FE=30 (FE=TPE) (Flamingo Enable = Type_msg Panel_num Enable/Disable). FE=30 disable panel 3, FE=31 enable panel 3.
+              {
                 LoRa_buff[0] = '2';
                 LoRa_buff[1] = bt_message[3];
                 LoRa_buff[2] = bt_message[4];
                 LoRa_buff[2] = 0;
-              LoRa_send(LoRa_buff,FLAMINGO_MSG_LEN);
+                // LoRa_send(LoRa_buff,FLAMINGO_MSG_LEN);
+                LoRa.write(LoRa_buff,FLAMINGO_MSG_LEN);
+              }
               break;
            default:
               DEBUG_PRINT("appliance_type");
@@ -951,12 +960,23 @@ void report_appliances_status() {
 // ----------- Bluetooth END -----------
 
 // -------- LoRa --------
-void LoRa_send(char* buff,int len)
-{
-  return;
+void LoRa_read(char * buff) {
+   int i = 0;
+   while (LoRa.available()) {
+      buff[i] = LoRa.read();
+      DEBUG_PRINT("current data: ");
+      DEBUG_PRINTLN(buff[i]);
+      i++;
+   }
+   LoRa_RecvFlag = true;
+   DEBUG_PRINTLN("data from lora");
+   DEBUG_PRINTLN(buff);
 }
-void LoRa_recv(char* buff,int len)
-{
-  return;
-}
+
+// void LoRa_send(char* buff,int len)
+// {
+//   LoRa.write(buff, len);
+//   return;
+// }
+
 // -------- LoRa END --------
