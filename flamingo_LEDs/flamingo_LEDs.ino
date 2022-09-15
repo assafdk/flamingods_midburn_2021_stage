@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "ledDriver.h"
+#include "LoRa.h"
 
 #define DEBUG
 #define jumperPin 8
@@ -95,6 +96,7 @@ void setup() {
   led_setup();        // init led stuff
   ledPlan = bpm;  // choose first LED plan
   
+  init_incoming_buffer();
   init_RGB_array();
   enable_all_panels();
 
@@ -190,11 +192,11 @@ void LoRa_read(char * buff) {
    while (LoRa.available()) {
       buff[i] = LoRa.read();
       DEBUG_PRINT("current data: ");
-      DEBUG_PRINTln(buff[i]);
+      DEBUG_PRINTLN(buff[i]);
       i++;
    }
-   DEBUG_PRINTln("data from lora");
-   DEBUG_PRINTln(buff);
+   DEBUG_PRINTLN("data from lora");
+   DEBUG_PRINTLN(buff);
 }
 
 // parse data coming from one of the button panels
@@ -409,6 +411,12 @@ void parse_panel_enable(char* incomingBuffer) {
 void enable_all_panels() {
   for (int i=0; i<PANELS_COUNT; i++)
     panelEnabled[i] = true;
+  return;
+}
+
+void init_incoming_buffer() {
+  for (int i=0; i<LORA_DATA_LENGTH; i++)
+    incomingBuffer[i] = '\0';
   return;
 }
 
