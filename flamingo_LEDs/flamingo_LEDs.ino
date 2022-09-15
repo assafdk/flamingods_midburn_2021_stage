@@ -189,12 +189,12 @@ void LoRa_read(char * buff) {
    int i = 0;
    while (LoRa.available()) {
       buff[i] = LoRa.read();
-      Serial.print("current data: ");
-      Serial.println(buff[i]);
+      DEBUG_PRINT("current data: ");
+      DEBUG_PRINTln(buff[i]);
       i++;
    }
-   Serial.println("data from lora");
-   Serial.println(buff);
+   DEBUG_PRINTln("data from lora");
+   DEBUG_PRINTln(buff);
 }
 
 // parse data coming from one of the button panels
