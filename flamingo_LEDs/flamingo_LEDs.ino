@@ -39,8 +39,9 @@
 
 // ------- Global variables: -------
 unsigned long now, party_start_time;
-bool jumperState = HIGH;  // HIGH - Jumper is disconnected. LOW - Jumper is connected
-int pressFlag = 0;        // 0 = no one is pressing any button on any panel. >0 otherwise. 
+bool jumperState = HIGH;      // HIGH - Jumper is  disconnected. LOW - Jumper is connected
+bool prevJumperState = HIGH;  // HIGH - Jumper was disconnected. LOW - Jumper is connected
+int pressFlag = 0;            // 0 = no one is pressing any button on any panel. >0 otherwise. 
 
 typedef enum {
   LED_IDLE,
@@ -70,6 +71,7 @@ int parse_panel_data(char* incomingBuffer);
 void parse_stage_data(char* incomingBuffer);
 void parse_panel_enable(char* incomingBuffer);
 void enable_all_panels();
+void disable_all_panels();
 
 // external function
 extern void led_setup();
@@ -116,14 +118,9 @@ void setup() {
 void loop() {
   DEBUG_DELAY;
   now = millis();                     // get current time
-  // jumper_polling();                   // poll jumper to choose between 2 led plans (ledState)
-
-  if (isJumperConnected()) {
-    // if jumper is connected then override or something...
-    // otherwise just continue with the normal plan
-    led_multiplan();
-    return;
-  }
+  
+  // if jumper is connected then ignore all panels
+  jumper_polling();
 
   // if jumper is not connected...
   if (LoRa_isDataReady()) {           // check if LoRa has incoming data waiting to be read
@@ -326,20 +323,28 @@ void run_old_flamingo() {
   EVERY_N_SECONDS( 1 ) { DEBUG_PRINT("ledState = "); DEBUG_PRINTLN(ledState);}
 }
 
+// if jumper is connected then ignore all panels
+// connection event - DISABLE all panels
+// disconnection event - ENABLE all panels again 
 void jumper_polling() {
   // Read out the jumperPin
   jumperState = digitalRead(jumperPin);
+  if (prevJumperState == jumperState)
+    // nothing changed
+    return;
 
-  if (LOW == jumperState) {
-    // Party mode
-    // Circulate between the different LED plans
-    ledState = LED_FUN;
-  }
-  if (HIGH == jumperState) {
-    // idle mode
-    // static rainbow
-    ledState = LED_IDLE;
-  }
+  if (LOW == jumperState)
+    // Somewone just connected the jumper
+    // ignore all panels
+    disable_all_panels();
+
+  if (HIGH == jumperState)
+    // Somewone just disconnected the jumper
+    // enable all panels again
+    enable_all_panels();
+
+  prevJumperState = jumperState;
+  return;
 }
 
 bool isJumperConnected() {
@@ -418,6 +423,12 @@ void parse_panel_enable(char* incomingBuffer) {
 void enable_all_panels() {
   for (int i=0; i<PANELS_COUNT; i++)
     panelEnabled[i] = true;
+  return;
+}
+
+void disable_all_panels() {
+  for (int i=0; i<PANELS_COUNT; i++)
+    panelEnabled[i] = false;
   return;
 }
 
