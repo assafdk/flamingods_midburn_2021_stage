@@ -300,20 +300,27 @@ void run_panel_LED_plan() {
 void run_old_flamingo() {
   switch (ledState) {
     case LED_IDLE:
-      // jumper is disconnected
       EVERY_N_SECONDS( 1 ) { DEBUG_PRINTLN("LED_IDLE"); }
+      led_multiplan();
+      break;
+    case LED_SHOW:
+      EVERY_N_SECONDS( 1 ) { DEBUG_PRINTLN("LED_SHOW"); }
       // ledPlan = rainbow; //sawtooth; // flow;
-      //ledPlan = bpm;
+      // ledPlan = bpm;
       ledPlan = all_pink;   // change to pounding pink...
       // run current LED plan
       led_run(ledPlan);
       break;
+    case LED_EASTER:
+      EVERY_N_SECONDS( 1 ) { DEBUG_PRINTLN("LED_EASTER"); }
+      ledPlan = rainbow; //sawtooth; // flow;
+      led_run(ledPlan);
+      break;
     case LED_FUN:
-      // jumper is connected
       EVERY_N_SECONDS( 1 ) { DEBUG_PRINTLN("LED_FUN"); }
-      //ledPlan = flickering_rainbow;;
+      ledPlan = flickering_rainbow;;
       //led_run(juggle);
-      led_multiplan();
+      led_run(ledPlan);
       break;
   }
   EVERY_N_SECONDS( 1 ) { DEBUG_PRINT("ledState = "); DEBUG_PRINTLN(ledState);}
