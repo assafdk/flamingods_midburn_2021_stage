@@ -278,6 +278,7 @@ fill_solid( leds, NUM_LEDS, CRGB(25,255,10)); // Pink Dima
 //    leds[i] = CRGB::HotPink;
 ////    FastLED.show();
 //  }
+
 }
 
 void solid_color(int red, int green, int blue) {
@@ -293,7 +294,7 @@ void random_solid() {
   int min_color=30;
   int max_color=200;
 
-  DEBUG_PRINTLN("all_pink()");
+  DEBUG_PRINTLN("random_solid()");
   //CRGB(BLUE,RED,GREEN)
 
   if (solid_color_flag) { return; }

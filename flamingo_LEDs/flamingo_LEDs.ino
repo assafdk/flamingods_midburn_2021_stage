@@ -2,8 +2,8 @@
 #include "ledDriver.h"
 #include "LoRa.h"
 
-// #define DEBUG
-#define DEBUG_PRINT_DELAY   10   // Seconds
+#define DEBUG
+#define DEBUG_PRINT_DELAY   0   // Seconds
 
 #define jumperPin 8
 #define ledPin 13
@@ -24,7 +24,7 @@
 #define COM_COOLING_TIME   0         // I might not want to get new data too often to prevent glitches
 
 #ifdef DEBUG
-#define COMMAND_HOLD_TIME  1000       // IF THE LIGHTS ARE FLASHING INCREASE THIS VALUE!!! should be { prod>110  debug>170 }
+#define COMMAND_HOLD_TIME  250       // IF THE LIGHTS ARE FLASHING INCREASE THIS VALUE!!! should be { prod>110  debug>170 }
 #else
 #define COMMAND_HOLD_TIME  250       // IF THE LIGHTS ARE FLASHING INCREASE THIS VALUE!!! should be { prod>110  debug>170 }
 #endif
@@ -168,6 +168,7 @@ void loop() {
       DEBUG_PRINTLN("No such message type");
         break; 
     }
+  init_incoming_buffer();    
   }
   reset_old_rows();           // clear panel row after buttons released
   update_total_RGB_values();  // to clear the SUM row if any row was deleted in the previous line
@@ -312,7 +313,8 @@ void run_old_flamingo() {
     case LED_IDLE:
       EVERY_N_SECONDS( DEBUG_PRINT_DELAY ) { DEBUG_PRINTLN("LED_IDLE"); }
       // led_multiplan();
-      rainbow();
+      // runway();
+      flow();      
       break;
     case LED_SHOW:
       EVERY_N_SECONDS( DEBUG_PRINT_DELAY ) { DEBUG_PRINTLN("LED_SHOW"); }
