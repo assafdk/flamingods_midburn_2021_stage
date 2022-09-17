@@ -152,7 +152,7 @@ void report_appliances_status();
 #define LORA_MSG_LEN    4
 
 char LoRa_buff[LORA_BUFF_SIZE] = {0};
-// void LoRa_send(char* buff,int len);
+void LoRa_send(char* buff,int len);
 void LoRa_read(char* buff,int len);
 bool LoRa_RecvFlag = false;
 
@@ -337,8 +337,7 @@ void loop() {
 void idle_setup() {
   DEBUG_PRINTLN("idle_setup()");
   ledControl(LED_IDLE);
-  // LoRa_send(LORA_MSG_IDLE, LORA_MSG_LEN);
-  LoRa.write(LORA_MSG_IDLE, LORA_MSG_LEN);
+  LoRa_send(LORA_MSG_IDLE, strlen(LORA_MSG_IDLE));
   DEBUG_PRINTLN("IDLE SETUP - STOP SONG");
   turnAllRelaysOff();
   return;
@@ -354,8 +353,7 @@ void idle_state()
 bool showSetupFlag = false;
 void show_setup() {
   ledControl(LED_SHOW);
-  // LoRa_send(LORA_MSG_SHOW, LORA_MSG_LEN);
-  LoRa.write(LORA_MSG_SHOW, LORA_MSG_LEN);
+  LoRa_send(LORA_MSG_SHOW, strlen(LORA_MSG_SHOW));
   DEBUG_PRINTLN("show_setup()");
   showSetupFlag = true;
   showTime = 0;
@@ -441,8 +439,7 @@ void show_state()
 // -- EASTER STATE --
 void easter_setup() {
   DEBUG_PRINTLN("easter_setup()");
-  // LoRa_send(LORA_MSG_EASTER, LORA_MSG_LEN);
-  LoRa.write(LORA_MSG_SHOW, LORA_MSG_LEN);
+  LoRa_send(LORA_MSG_EASTER, strlen(LORA_MSG_EASTER));
   easterStartTime = now;
   relayToggle(WHITE_LIGHTS,OFF); relayToggle(WHITE_LIGHTS_BACKUP,OFF);
   relayToggle(COLOR_LIGHTS_1,OFF); relayToggle(COLOR_LIGHTS_1_BACKUP,OFF);
@@ -887,8 +884,7 @@ event_t parse_BT_msg() {   // Parse incoming BT message
                 LoRa_buff[1] = bt_message[3];
                 LoRa_buff[2] = bt_message[4];
                 LoRa_buff[2] = 0;
-                // LoRa_send(LoRa_buff,FLAMINGO_MSG_LEN);
-                LoRa.write(LoRa_buff,FLAMINGO_MSG_LEN);
+                LoRa_send(LoRa_buff,strlen(LoRa_buff));
               }
               break;
            default:
@@ -972,11 +968,13 @@ void LoRa_read(char * buff) {
    DEBUG_PRINTLN("data from lora");
    DEBUG_PRINTLN(buff);
 }
-
-// void LoRa_send(char* buff,int len)
-// {
-//   LoRa.write(buff, len);
-//   return;
-// }
+ 
+void LoRa_send(char* buff,int len)
+{
+  LoRa.beginPacket();
+  LoRa.write(buff, len);
+  LoRa.endPacket(true);
+  return;
+}
 
 // -------- LoRa END --------
