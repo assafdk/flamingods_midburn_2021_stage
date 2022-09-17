@@ -2,23 +2,33 @@
 #include "ledDriver.h"
 #include "LoRa.h"
 
-#define DEBUG
+// #define DEBUG
+#define DEBUG_PRINT_DELAY   10   // Seconds
+
 #define jumperPin 8
 #define ledPin 13
 
 #ifdef DEBUG
+  #define DEBUG_BEGIN(x)    Serial.begin(x); // open the serial port at 9600 bps
   #define DEBUG_PRINT(x)    Serial.print (x)
   #define DEBUG_PRINTLN(x)  Serial.println (x)
   #define DEBUG_DELAY   delay(0)
 #else
+  #define DEBUG_BEGIN(x)
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
   #define DEBUG_DELAY
 #endif
 
 //#define TIMEOUT 10000                 // someone is pressing for 10 sec?
-#define COM_COOLING_TIME  0         // I might don't want to get new data too often to prevent glitches
-#define COMMAND_HOLD_TIME  500
+#define COM_COOLING_TIME   0         // I might not want to get new data too often to prevent glitches
+
+#ifdef DEBUG
+#define COMMAND_HOLD_TIME  1000       // IF THE LIGHTS ARE FLASHING INCREASE THIS VALUE!!! should be { prod>110  debug>170 }
+#else
+#define COMMAND_HOLD_TIME  250       // IF THE LIGHTS ARE FLASHING INCREASE THIS VALUE!!! should be { prod>110  debug>170 }
+#endif
+
 #define LORA_DATA_LENGTH   20 
 
 // Panels table
@@ -89,7 +99,7 @@ void setup() {
   pinMode(ledPin, OUTPUT);
   pinMode(jumperPin, INPUT_PULLUP);
   
-  Serial.begin(9600); // open the serial port at 9600 bps
+  DEBUG_BEGIN(9600) // open the serial port at 9600 bps
   delay(300);
   LoRa.begin(433E6);
   DEBUG_PRINTLN("DEBUG MODE");
@@ -116,7 +126,7 @@ void setup() {
 
 // -------------------------- main ---------------------------
 void loop() {
-  DEBUG_DELAY;
+  // DEBUG_DELAY;
   now = millis();                     // get current time
   
   // if jumper is connected then ignore all panels
@@ -162,6 +172,9 @@ void loop() {
   reset_old_rows();           // clear panel row after buttons released
   update_total_RGB_values();  // to clear the SUM row if any row was deleted in the previous line
   
+  // DEBUG_PRINT("pressFlag = ");
+  // DEBUG_PRINTLN(pressFlag);
+    
   // decide which LED plan to play now
   if (pressFlag) {
     run_panel_LED_plan();   // someone pressed a button on one of the panels
@@ -290,18 +303,19 @@ void run_panel_LED_plan() {
 
     print_panels_table();
   }
-  solid_color(blue,red,green);
+  solid_color(green,red,blue);
   return;
 }
 
 void run_old_flamingo() {
   switch (ledState) {
     case LED_IDLE:
-      EVERY_N_SECONDS( 1 ) { DEBUG_PRINTLN("LED_IDLE"); }
-      led_multiplan();
+      EVERY_N_SECONDS( DEBUG_PRINT_DELAY ) { DEBUG_PRINTLN("LED_IDLE"); }
+      // led_multiplan();
+      rainbow();
       break;
     case LED_SHOW:
-      EVERY_N_SECONDS( 1 ) { DEBUG_PRINTLN("LED_SHOW"); }
+      EVERY_N_SECONDS( DEBUG_PRINT_DELAY ) { DEBUG_PRINTLN("LED_SHOW"); }
       // ledPlan = rainbow; //sawtooth; // flow;
       // ledPlan = bpm;
       ledPlan = all_pink;   // change to pounding pink...
@@ -309,18 +323,19 @@ void run_old_flamingo() {
       led_run(ledPlan);
       break;
     case LED_EASTER:
-      EVERY_N_SECONDS( 1 ) { DEBUG_PRINTLN("LED_EASTER"); }
+      EVERY_N_SECONDS( DEBUG_PRINT_DELAY ) { DEBUG_PRINTLN("LED_EASTER"); }
       ledPlan = rainbow; //sawtooth; // flow;
       led_run(ledPlan);
       break;
     case LED_FUN:
-      EVERY_N_SECONDS( 1 ) { DEBUG_PRINTLN("LED_FUN"); }
+      EVERY_N_SECONDS( DEBUG_PRINT_DELAY ) { DEBUG_PRINTLN("LED_FUN"); }
       ledPlan = flickering_rainbow;;
       //led_run(juggle);
       led_run(ledPlan);
       break;
   }
-  EVERY_N_SECONDS( 1 ) { DEBUG_PRINT("ledState = "); DEBUG_PRINTLN(ledState);}
+  FastLED.show();
+  EVERY_N_SECONDS( DEBUG_PRINT_DELAY ) { DEBUG_PRINT("ledState = "); DEBUG_PRINTLN(ledState);}
 }
 
 // if jumper is connected then ignore all panels
@@ -360,15 +375,15 @@ bool isJumperConnected() {
 
 // debug function to print the panels table
 void print_panels_table() {
-  Serial.println ("P R G B Y W");
+  DEBUG_PRINTLN ("P R G B Y W");
   for (int panel=0; panel<PANELS_ARRAY_ROWS; panel++) {
-    Serial.print(panel);
-    Serial.print(" ");
+    DEBUG_PRINT(panel);
+    DEBUG_PRINT(" ");
     for (int col=0; col<PANELS_ARRAY_COLUMNS; col++) {
-      Serial.print(panelsRGB[panel][col]);
-      Serial.print(" ");
+      DEBUG_PRINT(panelsRGB[panel][col]);
+      DEBUG_PRINT(" ");
     }
-    Serial.println("");
+    DEBUG_PRINTLN("");
   }
   return;   
 }

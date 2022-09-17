@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "ledDriver.h"
 
-//#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
   #define DEBUG_PRINT(x)  Serial.print (x)
@@ -304,5 +304,5 @@ void random_solid() {
     blue = random(0,255);
     }
   solid_color_flag = true;
-  fill_solid( leds, NUM_LEDS, CRGB(blue,red,green));
+  fill_solid( leds, NUM_LEDS, CRGB(green,red,blue));
 }
