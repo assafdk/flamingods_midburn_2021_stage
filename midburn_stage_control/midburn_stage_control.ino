@@ -1,5 +1,7 @@
 #define DEBUG
 #define I2C
+#include <Arduino.h>
+#include <FastLED.h>
 #include "pushButtonDriver.h"
 #include <Wire.h>
 #include "LoRa.h"
@@ -82,17 +84,28 @@ typedef enum {
 #define OFF LOW
 
 // --- pins definition MEGA ---
-#define WHITE_LIGHTS        31
-#define COLOR_LIGHTS_1      33
-#define COLOR_LIGHTS_2      35
-#define BUBBLE_MACHINE      37
-#define SMOKE_MACHINE       39
-#define FLICKERS            41
-#define WHITE_LIGHTS_BACKUP        43
-#define COLOR_LIGHTS_1_BACKUP      45
-#define COLOR_LIGHTS_2_BACKUP      47
-#define FLICKERS_BACKUP            49
-#define BluetoothSerial Serial1
+#define WHITE_LIGHTS        2
+#define COLOR_LIGHTS_1      3
+#define COLOR_LIGHTS_2      4
+#define BUBBLE_MACHINE      6
+#define SMOKE_MACHINE       5
+#define FLICKERS            7
+#define WHITE_LIGHTS_BACKUP        8
+#define COLOR_LIGHTS_1_BACKUP      9
+#define COLOR_LIGHTS_2_BACKUP      10
+#define FLICKERS_BACKUP            11
+#define OTHER_PIN_1            12
+#define OTHER_PIN_2            13
+#define BluetoothSerial Serial1   // TX1 / RX1
+
+// LoRa pins
+#define LORA_SS_PIN     53
+#define LORA_RESET_PIN  49
+#define LORA_DIO0_PIN   48
+// Default LoRa SPI pins!! Can't change them... stated for documentation only:
+// #define MISO  50
+// #define MOSI  51
+// #define SCK   52
 
 // // --- pins definition UNO ---
 // #define WHITE_LIGHTS        8
@@ -124,7 +137,7 @@ typedef enum {
 
 // -------- COMMUNICATION --------
 // -------- Bluetooth --------
-#define BT_MAX_MESSAGE_LEN 8
+#define BT_MAX_MESSAGE_LEN 14
 #define BT_MSG_START_CHAR '{'
 #define BT_MSG_SEPERATION_CHAR ','
 #define BT_MSG_END_CHAR '}'
@@ -143,13 +156,18 @@ static char bt_inByte;
 void recv_BT_msg();
 event_t parse_BT_msg();
 void report_appliances_status();
+void init_bt_buffer();
 
 // -------- LoRa --------
 #define LORA_BUFF_SIZE  16      // no reason why I chose 16. has to be >7
-#define LORA_MSG_IDLE   "{10}"  // {TC} - Type=1 Command=0 (0=Idle)
-#define LORA_MSG_SHOW   "{11}"  // {TC} - Type=1 Command=0 (1=Show)
-#define LORA_MSG_EASTER "{12}"  // {TC} - Type=1 Command=0 (2=Easter)
-#define LORA_MSG_LEN    4
+#define LORA_MSG_IDLE   "10"  // {TC} - Type=1 Command=0 (0=Idle)
+#define LORA_MSG_SHOW   "11"  // {TC} - Type=1 Command=0 (1=Show)
+#define LORA_MSG_EASTER "12"  // {TC} - Type=1 Command=0 (2=Easter)
+#define LORA_MSG_LEN    2
+
+#define LORA_SEND_IDLE_INTERVAL 60  // send IDLE to flamingo every 1 minute
+#define LORA_SEND_SHOW_INTERVAL 10  // send SHOW to flamingo every 10 seconds
+#define LORA_SEND_EASTER_INTERVAL 1  // send SHOW to flamingo every 1 seconds
 
 char LoRa_buff[LORA_BUFF_SIZE] = {0};
 void LoRa_send(char* buff,int len);
@@ -219,6 +237,8 @@ void setup() {
   delay(500);
   BluetoothSerial.begin(BT_BAUD_RATE);
   delay(500);
+  init_bt_buffer();  
+  LoRa.setPins(LORA_SS_PIN,LORA_RESET_PIN,LORA_DIO0_PIN);
   LoRa.begin(433E6);
   delay(500);
   DEBUG_PRINTLN("DEBUG MODE");
@@ -240,6 +260,8 @@ void setup() {
   pinMode(COLOR_LIGHTS_1_BACKUP, OUTPUT);
   pinMode(COLOR_LIGHTS_2_BACKUP, OUTPUT);
   pinMode(FLICKERS_BACKUP, OUTPUT);
+  pinMode(OTHER_PIN_1, OUTPUT);
+  pinMode(OTHER_PIN_2, OUTPUT);
 
   turnAllRelaysOff();
   
@@ -345,6 +367,8 @@ void idle_setup() {
 
 void idle_state()
 {
+  EVERY_N_SECONDS( LORA_SEND_IDLE_INTERVAL ) { LoRa_send(LORA_MSG_IDLE, strlen(LORA_MSG_IDLE)); }
+  
   return;
 }
 // ----------------
@@ -353,7 +377,8 @@ void idle_state()
 bool showSetupFlag = false;
 void show_setup() {
   ledControl(LED_SHOW);
-  LoRa_send(LORA_MSG_SHOW, strlen(LORA_MSG_SHOW));
+  // LoRa_send(LORA_MSG_SHOW, strlen(LORA_MSG_SHOW));
+  LoRa_send(LORA_MSG_SHOW, 4);
   DEBUG_PRINTLN("show_setup()");
   showSetupFlag = true;
   showTime = 0;
@@ -384,7 +409,9 @@ void show_state()
         DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
         DEBUG_PRINTLN(showTime);
         DEBUG_PRINTLN("SHOW - white lights ON");
-        relayToggle(WHITE_LIGHTS,ON); relayToggle(WHITE_LIGHTS_BACKUP,ON);}
+        relayToggle(WHITE_LIGHTS,ON); relayToggle(WHITE_LIGHTS_BACKUP,ON);
+        relayToggle(OTHER_PIN_1,ON); relayToggle(OTHER_PIN_2,ON);
+        }
     // Play song
     if ((false == songPlaying) && (showTime > SHOW_SONG_PLAY_TIME)) {
         DEBUG_PRINTLN("------------------------"); DEBUG_PRINT("showTime = ");
@@ -432,6 +459,7 @@ void show_state()
       relayToggle(SMOKE_MACHINE,OFF);
   }
   
+  EVERY_N_SECONDS( LORA_SEND_SHOW_INTERVAL ) { LoRa_send(LORA_MSG_SHOW, strlen(LORA_MSG_SHOW)); }
   return;
 }
 // ----------------
@@ -442,6 +470,7 @@ void easter_setup() {
   LoRa_send(LORA_MSG_EASTER, strlen(LORA_MSG_EASTER));
   easterStartTime = now;
   relayToggle(WHITE_LIGHTS,OFF); relayToggle(WHITE_LIGHTS_BACKUP,OFF);
+  relayToggle(OTHER_PIN_1,OFF); relayToggle(OTHER_PIN_2,OFF);
   relayToggle(COLOR_LIGHTS_1,OFF); relayToggle(COLOR_LIGHTS_1_BACKUP,OFF);
   relayToggle(COLOR_LIGHTS_2,OFF); relayToggle(COLOR_LIGHTS_2_BACKUP,OFF);
   return;
@@ -480,6 +509,7 @@ void easter_state()
      Serial.print(SERIAL_ZOTI_WOW_FX);
      }
 
+  EVERY_N_SECONDS( LORA_SEND_EASTER_INTERVAL ) { LoRa_send(LORA_MSG_EASTER, strlen(LORA_MSG_EASTER)); }
   return;
 }
 
@@ -493,6 +523,7 @@ void show_lights_ON() {
   DEBUG_PRINTLN("show_lights_ON()");
   ledControl(LED_SHOW);
   relayToggle(WHITE_LIGHTS,ON); relayToggle(WHITE_LIGHTS_BACKUP,ON);
+  relayToggle(OTHER_PIN_1,ON); relayToggle(OTHER_PIN_2,ON);
   relayToggle(COLOR_LIGHTS_1,ON); relayToggle(COLOR_LIGHTS_1_BACKUP,ON);
   relayToggle(COLOR_LIGHTS_2,ON); relayToggle(COLOR_LIGHTS_2_BACKUP,ON);
   
@@ -664,6 +695,7 @@ void turnAllRelaysOff() {
   relayToggle(WHITE_LIGHTS,OFF); relayToggle(WHITE_LIGHTS_BACKUP,OFF);
   relayToggle(COLOR_LIGHTS_1,OFF); relayToggle(COLOR_LIGHTS_1_BACKUP,OFF);
   relayToggle(COLOR_LIGHTS_2,OFF); relayToggle(COLOR_LIGHTS_2_BACKUP,OFF);
+  relayToggle(OTHER_PIN_1,OFF); relayToggle(OTHER_PIN_2,OFF);
 }
 
 void relayToggle(int pin_number,int desiredOutput) {
@@ -878,12 +910,12 @@ event_t parse_BT_msg() {   // Parse incoming BT message
                       // this allows simulating the panels from the tablet app
               if ('C' == bt_message[2]) // FC=0010011 (FC=TPRGBYW) change flamingo color
                 strncpy(LoRa_buff,&bt_message[3],FLAMINGO_MSG_LEN);
-              if ('E' == bt_message[2]) // FE=30 (FE=TPE) (Flamingo Enable = Type_msg Panel_num Enable/Disable). FE=30 disable panel 3, FE=31 enable panel 3.
+              if ('E' == bt_message[2]) // FE=30 (FE=TPE) (Flamingo Enable = Type_msg Panel_num Enable/Disable). TPE=230 disable panel 3, TPE=231 enable panel 3.
               {
                 LoRa_buff[0] = '2';
                 LoRa_buff[1] = bt_message[3];
                 LoRa_buff[2] = bt_message[4];
-                LoRa_buff[2] = 0;
+                LoRa_buff[3] = 0;
                 LoRa_send(LoRa_buff,strlen(LoRa_buff));
               }
               break;
@@ -953,6 +985,13 @@ void report_appliances_status() {
 //  F=flickersON
 //  P=songPlaying
 }
+
+void init_bt_buffer() {
+  for (int i=0; i<BT_MAX_MESSAGE_LEN; i++)
+    bt_message[i] = '\0';
+  return;
+}
+
 // ----------- Bluetooth END -----------
 
 // -------- LoRa --------
@@ -971,6 +1010,8 @@ void LoRa_read(char * buff) {
  
 void LoRa_send(char* buff,int len)
 {
+  DEBUG_PRINT("Send to LoRa: ");
+  DEBUG_PRINTLN(buff);  
   LoRa.beginPacket();
   LoRa.write(buff, len);
   LoRa.endPacket(true);
