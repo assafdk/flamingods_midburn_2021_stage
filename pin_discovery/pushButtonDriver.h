@@ -6,9 +6,9 @@
 #include <Arduino.h>
 
 //MEGA
-//#define PUSH_BTN_PIN 52
+#define PUSH_BTN_PIN 53
 //UNO
-#define PUSH_BTN_PIN 13
+// #define PUSH_BTN_PIN 13
 
 #define LONG_PRESS_TIME 2000
 #define RELEASE_TIMEOUT 300 // check button state after X ms from release

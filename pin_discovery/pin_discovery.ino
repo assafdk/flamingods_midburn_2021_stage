@@ -13,35 +13,40 @@
 // -- constants --
 #define BUTTON_DELAY_MS  50      // push button debouncibg delay in millisec
 
-//// pins definition MEGA
-//#define WHITE_LIGHTS        31
-//#define COLOR_LIGHTS_1      33
-//#define COLOR_LIGHTS_2      35
-//#define BUBBLE_MACHINE      37
-//#define SMOKE_MACHINE       39
-//#define FLICKERS            41
-//#define WHITE_LIGHTS_BACKUP        43
-//#define COLOR_LIGHTS_1_BACKUP      45
-//#define COLOR_LIGHTS_2_BACKUP      47
-//#define FLICKERS_BACKUP            49
-
-// pins definition UNO
-#define FIRST_PIN     2
-#define LAST_PIN      11
-
-#define WHITE_LIGHTS        8
-#define COLOR_LIGHTS_1      9
-#define COLOR_LIGHTS_2      7
-#define BUBBLE_MACHINE      10
-#define SMOKE_MACHINE       5 // new
-#define FLICKERS            6
-//#define LED_CONTROL_PIN_1   2
-//#define LED_CONTROL_PIN_2   3
-
-#define WHITE_LIGHTS_BACKUP        2
-#define COLOR_LIGHTS_1_BACKUP      3
-#define COLOR_LIGHTS_2_BACKUP      4
+// pins definition MEGA
+#define WHITE_LIGHTS        2
+#define COLOR_LIGHTS_1      3
+#define COLOR_LIGHTS_2      4
+#define BUBBLE_MACHINE      6
+#define SMOKE_MACHINE       5
+#define FLICKERS            7
+#define WHITE_LIGHTS_BACKUP        8
+#define COLOR_LIGHTS_1_BACKUP      9
+#define COLOR_LIGHTS_2_BACKUP      10
 #define FLICKERS_BACKUP            11
+#define OTHER_PIN_1                12
+#define OTHER_PIN_2                13
+// pins definition MEGA
+#define FIRST_PIN     2
+#define LAST_PIN      13
+
+// // pins definition UNO
+// #define FIRST_PIN     2
+// #define LAST_PIN      11
+
+// #define WHITE_LIGHTS        8
+// #define COLOR_LIGHTS_1      9
+// #define COLOR_LIGHTS_2      7
+// #define BUBBLE_MACHINE      10
+// #define SMOKE_MACHINE       5 // new
+// #define FLICKERS            6
+// //#define LED_CONTROL_PIN_1   2
+// //#define LED_CONTROL_PIN_2   3
+
+// #define WHITE_LIGHTS_BACKUP        2
+// #define COLOR_LIGHTS_1_BACKUP      3
+// #define COLOR_LIGHTS_2_BACKUP      4
+// #define FLICKERS_BACKUP            11
 
 #define ON  HIGH
 #define OFF LOW
@@ -110,6 +115,8 @@ void setup() {
   pinMode(COLOR_LIGHTS_1_BACKUP, OUTPUT);
   pinMode(COLOR_LIGHTS_2_BACKUP, OUTPUT);
   pinMode(FLICKERS_BACKUP, OUTPUT);
+  pinMode(OTHER_PIN_1, OUTPUT);
+  pinMode(OTHER_PIN_2, OUTPUT);
 
   turnAllRelaysOff();
   
@@ -156,6 +163,7 @@ void turnAllRelaysOff() {
   relayToggle(WHITE_LIGHTS,OFF); relayToggle(WHITE_LIGHTS_BACKUP,OFF);
   relayToggle(COLOR_LIGHTS_1,OFF); relayToggle(COLOR_LIGHTS_1_BACKUP,OFF);
   relayToggle(COLOR_LIGHTS_2,OFF); relayToggle(COLOR_LIGHTS_2_BACKUP,OFF);
+  relayToggle(OTHER_PIN_1,OFF); relayToggle(OTHER_PIN_2,OFF);  
 }
 
 
