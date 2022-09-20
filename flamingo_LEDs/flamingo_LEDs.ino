@@ -3,7 +3,7 @@
 #include "LoRa.h"
 
 #define DEBUG
-#define DEBUG_PRINT_DELAY   0   // Seconds
+#define DEBUG_PRINT_DELAY   1   // Seconds
 
 #define jumperPin 8
 #define ledPin 13
@@ -24,9 +24,9 @@
 #define COM_COOLING_TIME   0         // I might not want to get new data too often to prevent glitches
 
 #ifdef DEBUG
-#define COMMAND_HOLD_TIME  250       // IF THE LIGHTS ARE FLASHING INCREASE THIS VALUE!!! should be { prod>110  debug>170 }
+#define COMMAND_HOLD_TIME  600000       // IF THE LIGHTS ARE FLASHING INCREASE THIS VALUE!!! should be { prod>110  debug>170 }
 #else
-#define COMMAND_HOLD_TIME  250       // IF THE LIGHTS ARE FLASHING INCREASE THIS VALUE!!! should be { prod>110  debug>170 }
+#define COMMAND_HOLD_TIME  60000       // IF THE LIGHTS ARE FLASHING INCREASE THIS VALUE!!! should be { prod>110  debug>170 }
 #endif
 
 #define LORA_DATA_LENGTH   20 

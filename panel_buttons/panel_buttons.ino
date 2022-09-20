@@ -25,6 +25,8 @@
 #define ID_SEED 1
 #define PACKET_TYPE '0'
 #define ZERO_REDUNDANCY 50
+#define LORA_INITIAL_SEND_INTERVAL  5     // initially send every 5 millis
+#define LORA_MAX_SEND_INTERVAL      2000  // stop sending when interval hits this value
 
 typedef enum {
   FALLING_EDGE,
@@ -40,6 +42,9 @@ int buttons_current_state[BUTTONS_COUNT] = {HIGH, HIGH, HIGH, HIGH, HIGH};
 int buttons_last_state[BUTTONS_COUNT] = {HIGH, HIGH, HIGH, HIGH, HIGH};
 //uint32_t BUTTON_TIMEOUT = 1000 * 60 * 2;
 uint32_t start_time = millis();
+uint32_t last_send_time;
+uint32_t lora_send_interval;
+bool send_flag = false;
 
 void sendDataToLORA(uint8_t * data, size_t data_size) {
   DEBUG_PRINTLN((char *)data);
@@ -74,6 +79,8 @@ void init_push_buttons() {
 }
 
 void setup() {
+  lora_send_interval = LORA_MAX_SEND_INTERVAL + 1;
+  last_send_time = 0;
   init_push_buttons();
   randomSeed(ID_SEED);
   Serial.begin(9600); // opens serial port, sets data rate to 9600 bps
@@ -109,7 +116,8 @@ void loop() {
         DEBUG_PRINTLN("Falling");
         press_start_time[i] = now;
         prepare_lora_packet(data);
-        sendDataToLORA(data, PACKET_SIZE);
+        lora_send_interval = LORA_INITIAL_SEND_INTERVAL;
+        send_flag = true;
         break;
 
       case RISING_EDGE:
@@ -117,10 +125,9 @@ void loop() {
         press_start_time[i] = 0;
         buttons_enabled[i] = true;
         data[i+2] = '0';
-        for (int i = 0; i < ZERO_REDUNDANCY; i++) {
-          prepare_lora_packet(data);
-          sendDataToLORA(data, PACKET_SIZE);
-        }
+        prepare_lora_packet(data);
+        lora_send_interval = LORA_INITIAL_SEND_INTERVAL;        
+        send_flag = true;
         break;
 
       case NO_EDGE:
@@ -128,21 +135,26 @@ void loop() {
           if (now - press_start_time[i] > BUTTON_TIMEOUT) {
             buttons_enabled[i] = false;
             data[i + 2] = '0';
-            DEBUG_PRINTLN("Button disabled");
-            for (int i = 0; i < ZERO_REDUNDANCY; i++) {
-              prepare_lora_packet(data);
-              sendDataToLORA(data, PACKET_SIZE);
+            prepare_lora_packet(data);
+            lora_send_interval = LORA_INITIAL_SEND_INTERVAL;
+            send_flag = true;
             }
           }
-          else {
-            prepare_lora_packet(data);
-            sendDataToLORA(data, PACKET_SIZE);
-          }
-        }
+
         break;
       default:
         DEBUG_PRINTLN("Weird stuff here");
     }
+  }
+
+  if (lora_send_interval > LORA_MAX_SEND_INTERVAL) {
+    send_flag = false;
+  }
+
+  if ((send_flag) && (now > last_send_time + lora_send_interval)) {
+    sendDataToLORA(data, PACKET_SIZE);
+    lora_send_interval *= 2;
+    last_send_time = now;
   }
   
   delay(3);
