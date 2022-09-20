@@ -138,7 +138,7 @@ void loop() {
     DEBUG_PRINTLN("");
     DEBUG_PRINTLN("new LoRa data");
     LoRa_read(incomingBuffer);
-    DEBUG_PRINTLN(incomingBuffer);
+    // DEBUG_PRINTLN(incomingBuffer);
     // parse LoRa message:
     msg_type = incomingBuffer[0]-'0';
     DEBUG_PRINT("msg_type: ");
@@ -202,12 +202,12 @@ void LoRa_read(char * buff) {
    int i = 0;
    while (LoRa.available()) {
       buff[i] = LoRa.read();
-      DEBUG_PRINT("current data: ");
-      DEBUG_PRINTLN(buff[i]);
+      // DEBUG_PRINT("current data: ");
+      // DEBUG_PRINTLN(buff[i]);
       i++;
    }
-   DEBUG_PRINTLN("data from lora");
-   DEBUG_PRINTLN(buff);
+  //  DEBUG_PRINTLN("data from lora");
+  //  DEBUG_PRINTLN(buff);
 }
 
 // parse data coming from one of the button panels

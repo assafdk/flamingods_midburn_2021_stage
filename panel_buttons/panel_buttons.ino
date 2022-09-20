@@ -2,7 +2,7 @@
 #include "Arduino.h"
 #include "LoRa.h"
 
-#define PANEL_ID '3'
+#define PANEL_ID '4'
 
 #define DEBUG
 
@@ -102,18 +102,20 @@ void prepare_lora_packet(uint8_t * data) {
     if (!buttons_enabled[curr_button]) {
       DEBUG_PRINTLN("button is DISABLED");
       data[payload_indx] = '0';
-      return;
+      continue;
     }
     if (buttons_current_state[curr_button]) {
-      DEBUG_PRINTLN("button is HIGH");
+      DEBUG_PRINT(curr_button);
+      DEBUG_PRINTLN(" button is HIGH");
       data[payload_indx] = '0';
-      return;
+      continue;
     }
     
     DEBUG_PRINTLN("button is LOW");
     data[payload_indx] = '1';
-    return;
+    continue;
   }
+  return;
 }
 
 void loop() {
