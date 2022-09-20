@@ -3,7 +3,7 @@
 #include "LoRa.h"
 
 #define DEBUG
-#define DEBUG_PRINT_DELAY   1   // Seconds
+#define DEBUG_PRINT_DELAY   5   // Seconds
 
 #define jumperPin 8
 #define ledPin 13

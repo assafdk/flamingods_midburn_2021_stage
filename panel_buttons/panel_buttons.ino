@@ -14,6 +14,8 @@
   #define DEBUG_PRINTLN(x)
 #endif
 
+#define DEBOUNCE_DELAY 0
+
 #define BUTTONS_COUNT 5
 #define RED_BUTTON_PIN 3
 #define GREEN_BUTTON_PIN 4
@@ -82,9 +84,9 @@ void init_push_buttons() {
 }
 
 void setup() {
+  init_push_buttons();
   lora_send_interval = LORA_MAX_SEND_INTERVAL + 1;
   last_send_time = 0;
-  init_push_buttons();
   randomSeed(ID_SEED);
   Serial.begin(9600); // opens serial port, sets data rate to 9600 bps
   DEBUG_PRINTLN("Starting LoRa");
@@ -170,5 +172,5 @@ void loop() {
     last_send_time = now;
   }
   
-  delay(3);
+  delay(DEBOUNCE_DELAY);
 }
