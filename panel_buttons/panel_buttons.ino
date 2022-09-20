@@ -2,6 +2,8 @@
 #include "Arduino.h"
 #include "LoRa.h"
 
+#define PANEL_ID '3'
+
 #define DEBUG
 
 #ifdef DEBUG
@@ -21,12 +23,12 @@
 #define SLEEP_TIME 10
 #define BUTTON_TIMEOUT 120000000 // 2 minutes
 #define PACKET_SIZE 8
-#define PANEL_ID '1'
-#define ID_SEED 1
+#define ID_SEED (PANEL_ID - '0')
 #define PACKET_TYPE '0'
 #define ZERO_REDUNDANCY 50
 #define LORA_INITIAL_SEND_INTERVAL  5     // initially send every 5 millis
 #define LORA_MAX_SEND_INTERVAL      2000  // stop sending when interval hits this value
+#define SPREAD_FACTOR   1.5   // multiply send interval by this value
 
 typedef enum {
   FALLING_EDGE,
@@ -34,7 +36,8 @@ typedef enum {
   NO_EDGE
 } edge_t;
 
-uint8_t pseudo_data[8] = {'0', '2', '0', '0', '0', '0', '0', '\0'};
+uint8_t data[8] = {PACKET_TYPE, PANEL_ID, '0', '0', '0', '0', '0', '\0'};
+uint8_t pseudo_data[8] = {PACKET_TYPE, PANEL_ID, '0', '0', '0', '0', '0', '\0'};
 bool buttons_enabled[BUTTONS_COUNT] = {true, true, true, true, true};
 uint8_t button_pins[BUTTONS_COUNT] = {RED_BUTTON_PIN, GREEN_BUTTON_PIN, BLUE_BUTTON_PIN, YELLOW_BUTTON_PIN, WHITE_BUTTON_PIN};
 uint32_t press_start_time[BUTTONS_COUNT] = {0, 0, 0, 0, 0};
@@ -92,21 +95,29 @@ void setup() {
 }
 
 void prepare_lora_packet(uint8_t * data) {
-  int i = 2;
-  int j = 0;
-  for (; i < 7; i++, j++) {
-    if (buttons_current_state[j] or !buttons_enabled[j]) {
-      data[i] = '0';
+  int payload_indx = 2;
+  int curr_button = 0;
+  for (; payload_indx < 7; payload_indx++, curr_button++) {
+    
+    if (!buttons_enabled[curr_button]) {
+      DEBUG_PRINTLN("button is DISABLED");
+      data[payload_indx] = '0';
+      return;
     }
-    else {
-      data[i] = '1';
+    if (buttons_current_state[curr_button]) {
+      DEBUG_PRINTLN("button is HIGH");
+      data[payload_indx] = '0';
+      return;
     }
+    
+    DEBUG_PRINTLN("button is LOW");
+    data[payload_indx] = '1';
+    return;
   }
 }
 
 void loop() {
   uint32_t now = millis();
-  uint8_t data[8] = {PACKET_TYPE, PANEL_ID, '0', '0', '0', '0', '0', '\0'};
   edge_t current_edge;
 
   for (int i = 0; i < BUTTONS_COUNT; i++) {
@@ -153,7 +164,7 @@ void loop() {
 
   if ((send_flag) && (now > last_send_time + lora_send_interval)) {
     sendDataToLORA(data, PACKET_SIZE);
-    lora_send_interval *= 2;
+    lora_send_interval = (uint32_t)(lora_send_interval * SPREAD_FACTOR);
     last_send_time = now;
   }
   
