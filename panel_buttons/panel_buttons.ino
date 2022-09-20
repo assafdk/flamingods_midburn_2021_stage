@@ -15,6 +15,7 @@
 #endif
 
 #define DEBOUNCE_DELAY 0
+#define RESET_PIN A5
 
 #define BUTTONS_COUNT 5
 #define RED_BUTTON_PIN 3
@@ -50,6 +51,8 @@ uint32_t start_time = millis();
 uint32_t last_send_time;
 uint32_t lora_send_interval;
 bool send_flag = false;
+bool time_to_reset = false;
+bool all_buttons_high = false;
 
 void sendDataToLORA(uint8_t * data, size_t data_size) {
   DEBUG_PRINTLN((char *)data);
@@ -84,6 +87,8 @@ void init_push_buttons() {
 }
 
 void setup() {
+  pinMode(RESET_PIN,INPUT_PULLUP);
+  digitalWrite(RESET_PIN,HIGH);
   init_push_buttons();
   lora_send_interval = LORA_MAX_SEND_INTERVAL + 1;
   last_send_time = 0;
@@ -118,6 +123,13 @@ void prepare_lora_packet(uint8_t * data) {
     continue;
   }
   return;
+}
+
+void watchdog() {
+  // TODO: reset only when all buttons are HIGH
+  if ((time_to_reset) && (all_buttons_high)) {
+    digitalWrite(RESET_PIN,LOW);
+  }
 }
 
 void loop() {
