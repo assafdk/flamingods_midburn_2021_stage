@@ -1,4 +1,4 @@
-#define DEBUG
+// #define DEBUG
 #define I2C
 #include <Arduino.h>
 #include <FastLED.h>
