@@ -106,6 +106,9 @@ typedef enum {
 // #define MISO  50
 // #define MOSI  51
 // #define SCK   52
+#define LORA_INITIAL_SEND_INTERVAL  5     // initially send every 5 millis
+#define LORA_MAX_SEND_INTERVAL      2000  // stop sending when interval hits this value
+#define SPREAD_FACTOR   1.5   // multiply send interval by this value
 
 // // --- pins definition UNO ---
 // #define WHITE_LIGHTS        8
@@ -173,6 +176,10 @@ char LoRa_buff[LORA_BUFF_SIZE] = {0};
 void LoRa_send(char* buff,int len);
 void LoRa_read(char* buff,int len);
 bool LoRa_RecvFlag = false;
+uint32_t lora_send_interval;
+uint32_t last_send_time;
+bool send_flag = false;
+uint8_t LoRa_data[8] = {'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'};
 
 // --------------------------------
 
@@ -235,12 +242,16 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(PC_BAUD_RATE); // open the serial port at 9600 bps
   delay(500);
+  
   BluetoothSerial.begin(BT_BAUD_RATE);
   delay(500);
   init_bt_buffer();  
+  
   LoRa.setPins(LORA_SS_PIN,LORA_RESET_PIN,LORA_DIO0_PIN);
   LoRa.begin(433E6);
   delay(500);
+  lora_send_interval = LORA_MAX_SEND_INTERVAL + 1;
+  last_send_time = 0;
   DEBUG_PRINTLN("DEBUG MODE");
   
   setupLedCom(); // I2C or direct
@@ -351,6 +362,18 @@ void loop() {
       easter_state();
       break;
   }
+
+  // -- BEGIN: LORA Send --  
+  if (lora_send_interval > LORA_MAX_SEND_INTERVAL) {
+    send_flag = false;
+  }
+
+  if ((send_flag) && (now > last_send_time + lora_send_interval)) {
+    sendDataToLORA(LoRa_data, strlen(LoRa_data));
+    lora_send_interval = (uint32_t)(lora_send_interval * SPREAD_FACTOR);
+    last_send_time = now;
+  }
+  // -- END: LORA SEND --  
 }
 // ------------------------------------------------------
 
@@ -377,8 +400,8 @@ void idle_state()
 bool showSetupFlag = false;
 void show_setup() {
   ledControl(LED_SHOW);
-  // LoRa_send(LORA_MSG_SHOW, strlen(LORA_MSG_SHOW));
-  LoRa_send(LORA_MSG_SHOW, 4);
+  LoRa_send(LORA_MSG_SHOW, strlen(LORA_MSG_SHOW));
+  // LoRa_send(LORA_MSG_SHOW, 4);
   DEBUG_PRINTLN("show_setup()");
   showSetupFlag = true;
   showTime = 0;
@@ -1012,10 +1035,23 @@ void LoRa_send(char* buff,int len)
 {
   DEBUG_PRINT("Send to LoRa: ");
   DEBUG_PRINTLN(buff);  
-  LoRa.beginPacket();
-  LoRa.write(buff, len);
-  LoRa.endPacket(true);
+  
+  strcpy(LoRa_data, buff);
+  lora_send_interval = LORA_INITIAL_SEND_INTERVAL;
+  send_flag = true;
+  
   return;
 }
+
+void sendDataToLORA(uint8_t * data, size_t data_size) {
+  DEBUG_PRINT("LORA SENDS: ");
+  DEBUG_PRINTLN((char *)data);
+  LoRa.beginPacket();
+  LoRa.write(data, data_size);
+  LoRa.endPacket(true);
+}
+
+
+
 
 // -------- LoRa END --------
