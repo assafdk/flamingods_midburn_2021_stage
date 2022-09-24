@@ -174,6 +174,8 @@ void loop() {
     }
   }
 
+
+// -- BEGIN: LORA Send --  
   if (lora_send_interval > LORA_MAX_SEND_INTERVAL) {
     send_flag = false;
   }
@@ -183,6 +185,7 @@ void loop() {
     lora_send_interval = (uint32_t)(lora_send_interval * SPREAD_FACTOR);
     last_send_time = now;
   }
+// -- END: LORA SEND --
   
   delay(DEBOUNCE_DELAY);
 }
