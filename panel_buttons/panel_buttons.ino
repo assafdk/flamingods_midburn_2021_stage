@@ -33,6 +33,7 @@
 #define LORA_MAX_SEND_INTERVAL      2000  // stop sending when interval hits this value
 #define SPREAD_FACTOR   1.5   // multiply send interval by this value
 #define WD_TIME 6000
+#define ZERO_PACKETS_AT_STARTUP 3
 
 void (* reset_func) (void) = 0;
 
@@ -101,6 +102,10 @@ void setup() {
   if (!LoRa.begin(433E6)) {
     DEBUG_PRINTLN("Starting LoRa failed!");
     while (1);
+  }
+  for (int i = 0; i < ZERO_PACKETS_AT_STARTUP; i++) {
+    sendDataToLORA(data, PACKET_SIZE);
+    delay(5);
   }
 }
 
