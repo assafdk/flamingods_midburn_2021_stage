@@ -35,8 +35,38 @@
 #define WD_TIME 6000
 #define ZERO_PACKETS_AT_STARTUP 3
 
+
+// -- receive --
+#define COM_COOLING_TIME   0         // I might not want to get new data too often to prevent glitches
+
+#ifdef DEBUG
+#define COMMAND_HOLD_TIME  600000       // IF THE LIGHTS ARE FLASHING INCREASE THIS VALUE!!! should be { prod>110  debug>170 }
+#else
+#define COMMAND_HOLD_TIME  60000       // IF THE LIGHTS ARE FLASHING INCREASE THIS VALUE!!! should be { prod>110  debug>170 }
+#endif
+
+#define LORA_DATA_LENGTH   20 
+
+// Panels table
+#define PANELS_COUNT 5
+#define COLORS_COUNT 5                // number of colors on each panel: i.e. RGBYW
+#define PANELS_ARRAY_ROWS    PANELS_COUNT+1
+#define PANELS_ARRAY_COLUMNS COLORS_COUNT
+
+#define SUM_ROW PANELS_COUNT
+
+// Panels table columns
+#define RED_COLUMN    0
+#define GREEN_COLUMN  1
+#define BLUE_COLUMN   2
+#define YELLOW_COLUMN 3
+#define WHITE_COLUMN  4
+
+
 void (* reset_func) (void) = 0;
 
+
+// ------- Global variables: -------
 typedef enum {
   FALLING_EDGE,
   RISING_EDGE,
@@ -57,38 +87,30 @@ uint32_t lora_send_interval;
 bool send_flag = false;
 bool time_to_reset = false;
 bool all_buttons_high = false;
+uint32_t now = millis();
 
-void sendDataToLORA(uint8_t * data, size_t data_size) {
-  DEBUG_PRINTLN((char *)data);
-  LoRa.beginPacket();
-  LoRa.write(data, data_size);
-  LoRa.endPacket(true);
-}
+// -- receiver --
 
-edge_t detect_button_edge(int button) {
-  // check if btn state is changed
-  buttons_current_state[button] = digitalRead(button_pins[button]);
-  if (buttons_last_state[button] != buttons_current_state[button]) {
-    buttons_last_state[button] = buttons_current_state[button];
-    // edge detecded
-    if (LOW == buttons_current_state[button]) {
-      return FALLING_EDGE;
-    }
-    if (HIGH == buttons_current_state[button]) {
-      return RISING_EDGE;
-    }
-  }
-  buttons_last_state[button] =  buttons_current_state[button];
-  return NO_EDGE;
-}
+// ledState_t ledState;
+unsigned long dataTimestamps[PANELS_COUNT+1] = {0};
+int panelsRGB[PANELS_ARRAY_ROWS][PANELS_ARRAY_COLUMNS]; // a table that holds the current button status of all panels 
+char incomingBuffer[LORA_DATA_LENGTH];
+bool panelEnabled[PANELS_COUNT];
 
+int msg_type, red, green, blue;
 
-void init_push_buttons() {
-  // loop on all buttons
-  for (int i = 0; i < BUTTONS_COUNT; i++) {
-    pinMode(button_pins[i], INPUT_PULLUP);
-  }
-}
+// functions
+bool LoRa_isDataReady();
+void LoRa_read(String buff);
+void enable_all_panels();
+void disable_all_panels();
+void init_incoming_buffer();
+void sendDataToLORA(uint8_t * data, size_t data_size);
+edge_t detect_button_edge(int button);
+void init_push_buttons();
+bool is_button_pressed();
+void watchdog();
+void prepare_lora_packet(uint8_t * data);
 
 void setup() {
   pinMode(RESET_PIN,INPUT_PULLUP);
@@ -109,47 +131,9 @@ void setup() {
   }
 }
 
-bool is_button_pressed() {
-  for (int i = 0; i < BUTTONS_COUNT; i++) {
-    if (buttons_current_state[i] == LOW) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void watchdog() {
-  if((millis() - last_send_time > WD_TIME) && !is_button_pressed()) {
-    reset_func();
-  }
-}
-
-void prepare_lora_packet(uint8_t * data) {
-  int payload_indx = 2;
-  int curr_button = 0;
-  for (; payload_indx < 7; payload_indx++, curr_button++) {
-    
-    if (!buttons_enabled[curr_button]) {
-      DEBUG_PRINTLN("button is DISABLED");
-      data[payload_indx] = '0';
-      continue;
-    }
-    if (buttons_current_state[curr_button]) {
-      DEBUG_PRINT(curr_button);
-      DEBUG_PRINTLN(" button is HIGH");
-      data[payload_indx] = '0';
-      continue;
-    }
-    
-    DEBUG_PRINTLN("button is LOW");
-    data[payload_indx] = '1';
-    continue;
-  }
-  return;
-}
-
+// -------------------------- main ---------------------------
 void loop() {
-  uint32_t now = millis();
+  now = millis();
   edge_t current_edge;
 
   for (int i = 0; i < BUTTONS_COUNT; i++) {
@@ -204,4 +188,205 @@ void loop() {
 // -- END: LORA SEND --
   watchdog();
   delay(DEBOUNCE_DELAY);
+}
+
+// ----------- functions: -----------
+void sendDataToLORA(uint8_t * data, size_t data_size) {
+  DEBUG_PRINTLN((char *)data);
+  LoRa.beginPacket();
+  LoRa.write(data, data_size);
+  LoRa.endPacket(true);
+}
+
+edge_t detect_button_edge(int button) {
+  // check if btn state is changed
+  buttons_current_state[button] = digitalRead(button_pins[button]);
+  if (buttons_last_state[button] != buttons_current_state[button]) {
+    buttons_last_state[button] = buttons_current_state[button];
+    // edge detecded
+    if (LOW == buttons_current_state[button]) {
+      return FALLING_EDGE;
+    }
+    if (HIGH == buttons_current_state[button]) {
+      return RISING_EDGE;
+    }
+  }
+  buttons_last_state[button] =  buttons_current_state[button];
+  return NO_EDGE;
+}
+
+
+void init_push_buttons() {
+  // loop on all buttons
+  for (int i = 0; i < BUTTONS_COUNT; i++) {
+    pinMode(button_pins[i], INPUT_PULLUP);
+  }
+}
+
+
+
+bool is_button_pressed() {
+  for (int i = 0; i < BUTTONS_COUNT; i++) {
+    if (buttons_current_state[i] == LOW) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void watchdog() {
+  if((millis() - last_send_time > WD_TIME) && !is_button_pressed()) {
+    reset_func();
+  }
+}
+
+void prepare_lora_packet(uint8_t * data) {
+  int payload_indx = 2;
+  int curr_button = 0;
+  for (; payload_indx < 7; payload_indx++, curr_button++) {
+    
+    if (!buttons_enabled[curr_button]) {
+      DEBUG_PRINTLN("button is DISABLED");
+      data[payload_indx] = '0';
+      continue;
+    }
+    if (buttons_current_state[curr_button]) {
+      DEBUG_PRINT(curr_button);
+      DEBUG_PRINTLN(" button is HIGH");
+      data[payload_indx] = '0';
+      continue;
+    }
+    
+    DEBUG_PRINTLN("button is LOW");
+    data[payload_indx] = '1';
+    continue;
+  }
+  return;
+}
+
+
+
+// -------------------------- functions ---------------------------
+void init_RGB_array() {
+  for (int i =0; i < PANELS_ARRAY_ROWS; i++) {
+    for (int j =0; j < PANELS_ARRAY_COLUMNS; j++) {
+      panelsRGB[i][j] = 0;
+    }
+  }
+}
+
+bool LoRa_isDataReady() {
+  return  LoRa.parsePacket();
+}
+
+void LoRa_read(char * buff) {
+   int i = 0;
+   while (LoRa.available()) {
+      buff[i] = LoRa.read();
+      // DEBUG_PRINT("current data: ");
+      // DEBUG_PRINTLN(buff[i]);
+      i++;
+   }
+  //  DEBUG_PRINTLN("data from lora");
+  //  DEBUG_PRINTLN(buff);
+}
+
+// parse data coming from one of the button panels
+int parse_panel_data(char* incomingBuffer) {
+  int panel = incomingBuffer[1]-'0';    // panel number
+  unsigned long dataTime = millis();
+  DEBUG_PRINT("panel: ");
+  DEBUG_PRINTLN(panel);
+  if (false == panelEnabled[panel])
+  { // ignore disabled panels
+    DEBUG_PRINTLN("This panel was disabled");
+    return 1;
+  }
+  if (dataTime > dataTimestamps[panel] + COM_COOLING_TIME) {
+    dataTimestamps[panel] = dataTime;
+    panelsRGB[panel][RED_COLUMN]    = (int)(incomingBuffer[2]-'0');
+    panelsRGB[panel][GREEN_COLUMN]  = (int)(incomingBuffer[3]-'0');
+    panelsRGB[panel][BLUE_COLUMN]   = (int)(incomingBuffer[4]-'0');
+    panelsRGB[panel][YELLOW_COLUMN] = (int)(incomingBuffer[5]-'0');
+    panelsRGB[panel][WHITE_COLUMN]  = (int)(incomingBuffer[6]-'0');
+    return 0;
+  }
+  return 1;
+}
+
+// calculates the sum of values on each color row
+// to find out how many buttons are pressed per color
+void update_total_RGB_values() {
+  int sum = 0;
+  for (int col=0; col<COLORS_COUNT; col++){
+    for (int pan=0; pan<PANELS_COUNT; pan++)
+      sum += panelsRGB[pan][col];
+    panelsRGB[SUM_ROW][col] = sum;
+    sum = 0;
+  }
+  return;
+}
+
+void reset_old_rows() {
+  for (int panel=0; panel < PANELS_COUNT; panel++) {
+    if ((dataTimestamps[panel] > 0) && (now > dataTimestamps[panel] + COMMAND_HOLD_TIME)) {
+      DEBUG_PRINT("now: ");
+      DEBUG_PRINTLN(now);
+      DEBUG_PRINT("delta_t = ");
+      DEBUG_PRINTLN(now - dataTimestamps[panel]);
+      for (int col=0; col < PANELS_ARRAY_COLUMNS; col++) {
+        panelsRGB[panel][col] = 0;
+        dataTimestamps[panel] = 0;
+      }
+      DEBUG_PRINT("old rows deleted. panel: ");
+      DEBUG_PRINTLN(panel);
+    }
+  }
+}
+
+// debug function to print the panels table
+void print_panels_table() {
+  DEBUG_PRINTLN ("P R G B Y W");
+  for (int panel=0; panel<PANELS_ARRAY_ROWS; panel++) {
+    DEBUG_PRINT(panel);
+    DEBUG_PRINT(" ");
+    for (int col=0; col<PANELS_ARRAY_COLUMNS; col++) {
+      DEBUG_PRINT(panelsRGB[panel][col]);
+      DEBUG_PRINT(" ");
+    }
+    DEBUG_PRINTLN("");
+  }
+  return;   
+}
+
+// enable/disable panel according to command received from the tablet
+void parse_panel_enable(char* incomingBuffer) {
+  // stage (disable/enable panel) -> flamingo
+  // msg = {TPE = Type Panel Enable} Type=2
+  int panel_number;
+  bool enable;
+
+  panel_number = incomingBuffer[1]-'0';
+  enable = incomingBuffer[2]-'0';
+  
+  panelEnabled[panel_number] = enable;
+  return;
+}
+
+void enable_all_panels() {
+  for (int i=0; i<PANELS_COUNT; i++)
+    panelEnabled[i] = true;
+  return;
+}
+
+void disable_all_panels() {
+  for (int i=0; i<PANELS_COUNT; i++)
+    panelEnabled[i] = false;
+  return;
+}
+
+void init_incoming_buffer() {
+  for (int i=0; i<LORA_DATA_LENGTH; i++)
+    incomingBuffer[i] = '\0';
+  return;
 }
