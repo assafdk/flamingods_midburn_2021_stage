@@ -114,9 +114,7 @@ bool is_button_pressed() {
 }
 
 void watchdog() {
-  DEBUG_PRINTLN(millis() - last_send_time);
   if((millis() - last_send_time > WD_TIME) && !is_button_pressed()) {
-    DEBUG_PRINTLN("Watchdog!");
     reset_func();
   }
 }
