@@ -129,6 +129,9 @@ void setup() {
     sendDataToLORA(data, PACKET_SIZE);
     delay(5);
   }
+  init_incoming_buffer();
+  init_RGB_array();
+  enable_all_panels();
 }
 
 // -------------------------- main ---------------------------
@@ -175,7 +178,7 @@ void loop() {
   }
 
 
-// -- BEGIN: LORA Send --  
+  // -- BEGIN: LORA Send --  
   if (lora_send_interval > LORA_MAX_SEND_INTERVAL) {
     send_flag = false;
   }
@@ -185,7 +188,7 @@ void loop() {
     lora_send_interval = (uint32_t)(lora_send_interval * SPREAD_FACTOR);
     last_send_time = now;
   }
-// -- END: LORA SEND --
+  // -- END: LORA SEND --
   watchdog();
   delay(DEBOUNCE_DELAY);
 }
@@ -222,8 +225,6 @@ void init_push_buttons() {
     pinMode(button_pins[i], INPUT_PULLUP);
   }
 }
-
-
 
 bool is_button_pressed() {
   for (int i = 0; i < BUTTONS_COUNT; i++) {
