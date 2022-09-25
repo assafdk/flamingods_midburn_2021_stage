@@ -32,6 +32,9 @@
 #define LORA_INITIAL_SEND_INTERVAL  5     // initially send every 5 millis
 #define LORA_MAX_SEND_INTERVAL      2000  // stop sending when interval hits this value
 #define SPREAD_FACTOR   1.5   // multiply send interval by this value
+#define WD_TIME 6000
+
+void (* reset_func) (void) = 0;
 
 typedef enum {
   FALLING_EDGE,
@@ -48,7 +51,7 @@ int buttons_current_state[BUTTONS_COUNT] = {HIGH, HIGH, HIGH, HIGH, HIGH};
 int buttons_last_state[BUTTONS_COUNT] = {HIGH, HIGH, HIGH, HIGH, HIGH};
 //uint32_t BUTTON_TIMEOUT = 1000 * 60 * 2;
 uint32_t start_time = millis();
-uint32_t last_send_time;
+uint32_t last_send_time = millis();
 uint32_t lora_send_interval;
 bool send_flag = false;
 bool time_to_reset = false;
@@ -101,6 +104,23 @@ void setup() {
   }
 }
 
+bool is_button_pressed() {
+  for (int i = 0; i < BUTTONS_COUNT; i++) {
+    if (buttons_current_state[i] == LOW) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void watchdog() {
+  DEBUG_PRINTLN(millis() - last_send_time);
+  if((millis() - last_send_time > WD_TIME) && !is_button_pressed()) {
+    DEBUG_PRINTLN("Watchdog!");
+    reset_func();
+  }
+}
+
 void prepare_lora_packet(uint8_t * data) {
   int payload_indx = 2;
   int curr_button = 0;
@@ -123,13 +143,6 @@ void prepare_lora_packet(uint8_t * data) {
     continue;
   }
   return;
-}
-
-void watchdog() {
-  // TODO: reset only when all buttons are HIGH
-  if ((time_to_reset) && (all_buttons_high)) {
-    digitalWrite(RESET_PIN,LOW);
-  }
 }
 
 void loop() {
@@ -186,6 +199,6 @@ void loop() {
     last_send_time = now;
   }
 // -- END: LORA SEND --
-  
+  watchdog();
   delay(DEBOUNCE_DELAY);
 }
