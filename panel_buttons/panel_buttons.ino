@@ -111,6 +111,7 @@ void init_push_buttons();
 bool is_button_pressed();
 void watchdog();
 void prepare_lora_packet(uint8_t * data);
+void handle_incoming_data();
 
 void setup() {
   pinMode(RESET_PIN,INPUT_PULLUP);
@@ -189,11 +190,21 @@ void loop() {
     last_send_time = now;
   }
   // -- END: LORA SEND --
+
+  // -- BEGIN: LORA RECEIVE -- 
+  // check if LoRa has incoming data waiting to be read
+  if (LoRa_isDataReady()) {
+    handle_incoming_data();
+  }
+  reset_old_rows();           // clear panel row after buttons released
+  update_total_RGB_values();  // clear the SUM row if any row was deleted in the previous line
+  // -- END: LORA RECEIVE -- 
+
   watchdog();
   delay(DEBOUNCE_DELAY);
 }
 
-// ----------- functions: -----------
+// -------------------------- functions ---------------------------
 void sendDataToLORA(uint8_t * data, size_t data_size) {
   DEBUG_PRINTLN((char *)data);
   LoRa.beginPacket();
@@ -265,9 +276,6 @@ void prepare_lora_packet(uint8_t * data) {
   return;
 }
 
-
-
-// -------------------------- functions ---------------------------
 void init_RGB_array() {
   for (int i =0; i < PANELS_ARRAY_ROWS; i++) {
     for (int j =0; j < PANELS_ARRAY_COLUMNS; j++) {
@@ -391,3 +399,41 @@ void init_incoming_buffer() {
     incomingBuffer[i] = '\0';
   return;
 }
+
+
+
+
+void handle_incoming_data() {
+    // read incoming LoRa data into buffer:
+    DEBUG_PRINTLN("");
+    DEBUG_PRINTLN("new LoRa data");
+    LoRa_read(incomingBuffer);
+    // DEBUG_PRINTLN(incomingBuffer);
+    // parse LoRa message:
+    msg_type = incomingBuffer[0]-'0';
+    DEBUG_PRINT("msg_type: ");
+    DEBUG_PRINTLN(msg_type);
+    switch (msg_type) {
+      case 0: // panel -> flamingo
+              // msg = {TPRGBYW = Type Panel COLORS} Type=0
+        DEBUG_PRINT("MSG panel -> flamingo: ");
+        DEBUG_PRINTLN(incomingBuffer);
+        parse_panel_data(incomingBuffer); // parse and handle recieved panel data
+        update_total_RGB_values();
+        //run_panel_LED_plan();
+        break;
+      case 2: // stage (disable/enable panel) -> flamingo
+              // msg = {TPE = Type Panel Enable} Type=2
+        DEBUG_PRINT("MSG Disable/Enable: ");
+        DEBUG_PRINTLN(incomingBuffer);
+        parse_panel_enable(incomingBuffer);
+        break;
+      default:// very strange...
+      DEBUG_PRINTLN("No such message type");
+        break; 
+    }
+  init_incoming_buffer();
+  return;
+  }
+
+
