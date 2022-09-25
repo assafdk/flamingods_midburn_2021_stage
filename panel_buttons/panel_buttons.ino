@@ -18,11 +18,20 @@
 #define RESET_PIN A5
 
 #define BUTTONS_COUNT 5
+
+/// COLOR PINS:
 #define RED_BUTTON_PIN 3
 #define GREEN_BUTTON_PIN 4
 #define BLUE_BUTTON_PIN 5
 #define YELLOW_BUTTON_PIN 6
 #define WHITE_BUTTON_PIN 7
+
+#define RED_BUTTON_POWER_PIN    8
+#define GREEN_BUTTON_POWER_PIN  9
+#define BLUE_BUTTON_POWER_PIN   10
+#define YELLOW_BUTTON_POWER_PIN 11
+#define WHITE_BUTTON_POWER_PIN  12
+
 #define SLEEP_TIME 10
 #define BUTTON_TIMEOUT 120000000 // 2 minutes
 #define PACKET_SIZE 8
@@ -91,7 +100,6 @@ uint32_t now = millis();
 
 // -- receiver --
 
-// ledState_t ledState;
 unsigned long dataTimestamps[PANELS_COUNT+1] = {0};
 int panelsRGB[PANELS_ARRAY_ROWS][PANELS_ARRAY_COLUMNS]; // a table that holds the current button status of all panels 
 char incomingBuffer[LORA_DATA_LENGTH];
@@ -112,11 +120,14 @@ bool is_button_pressed();
 void watchdog();
 void prepare_lora_packet(uint8_t * data);
 void handle_incoming_data();
+void init_buttons_power_pins();
+void display_other_panels_state_on_buttons();
 
 void setup() {
   pinMode(RESET_PIN,INPUT_PULLUP);
   digitalWrite(RESET_PIN,HIGH);
   init_push_buttons();
+  init_buttons_power_pins();
   lora_send_interval = LORA_MAX_SEND_INTERVAL + 1;
   last_send_time = 0;
   randomSeed(ID_SEED);
@@ -196,9 +207,10 @@ void loop() {
   if (LoRa_isDataReady()) {
     handle_incoming_data();
   }
+  // -- END: LORA RECEIVE -- 
   reset_old_rows();           // clear panel row after buttons released
   update_total_RGB_values();  // clear the SUM row if any row was deleted in the previous line
-  // -- END: LORA RECEIVE -- 
+  display_other_panels_state_on_buttons();
 
   watchdog();
   delay(DEBOUNCE_DELAY);
@@ -400,9 +412,6 @@ void init_incoming_buffer() {
   return;
 }
 
-
-
-
 void handle_incoming_data() {
     // read incoming LoRa data into buffer:
     DEBUG_PRINTLN("");
@@ -436,4 +445,26 @@ void handle_incoming_data() {
   return;
   }
 
+void init_buttons_power_pins() {
+    pinMode(RED_BUTTON_POWER_PIN,OUTPUT);
+    pinMode(GREEN_BUTTON_POWER_PIN,OUTPUT);
+    pinMode(BLUE_BUTTON_POWER_PIN,OUTPUT);
+    pinMode(YELLOW_BUTTON_POWER_PIN,OUTPUT);
+    pinMode(WHITE_BUTTON_POWER_PIN,OUTPUT);
+
+    digitalWrite(RED_BUTTON_POWER_PIN,HIGH);
+    digitalWrite(GREEN_BUTTON_POWER_PIN,HIGH);
+    digitalWrite(BLUE_BUTTON_POWER_PIN,HIGH);
+    digitalWrite(YELLOW_BUTTON_POWER_PIN,HIGH);
+    digitalWrite(WHITE_BUTTON_POWER_PIN,HIGH);
+}
+
+void display_other_panels_state_on_buttons() {
+    digitalWrite(RED_BUTTON_POWER_PIN,panelsRGB[SUM_ROW][RED_COLUMN] == 0);
+    digitalWrite(GREEN_BUTTON_POWER_PIN,panelsRGB[SUM_ROW][GREEN_COLUMN] == 0);
+    digitalWrite(BLUE_BUTTON_POWER_PIN,panelsRGB[SUM_ROW][BLUE_COLUMN] == 0);
+    digitalWrite(YELLOW_BUTTON_POWER_PIN,panelsRGB[SUM_ROW][YELLOW_COLUMN] == 0);
+    digitalWrite(WHITE_BUTTON_POWER_PIN,panelsRGB[SUM_ROW][WHITE_COLUMN] == 0);
+    return;
+}
 
