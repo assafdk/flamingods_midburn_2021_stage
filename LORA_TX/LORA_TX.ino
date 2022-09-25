@@ -25,6 +25,7 @@ void loop() {
   // send packet
   //return;
   for (int i = 0; i < 500; i++) {
+    delay(1000);
     Serial.println("Sending data");
     uint8_t data[8] = {'0', '1', '0', '0', '1', '0', '0', '\0'};
     LoRa.beginPacket();
