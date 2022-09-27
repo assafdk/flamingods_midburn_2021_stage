@@ -4,7 +4,7 @@
 
 #define PANEL_ID '4'
 
-#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
   #define DEBUG_PRINT(x)  Serial.print (x)
@@ -41,7 +41,7 @@
 #define LORA_INITIAL_SEND_INTERVAL  5     // initially send every 5 millis
 #define LORA_MAX_SEND_INTERVAL      2000  // stop sending when interval hits this value
 #define SPREAD_FACTOR   1.5   // multiply send interval by this value
-#define WD_TIME 6000
+#define WD_TIME 60000          // Watchdog - Reset Arduino every WD_TIME
 #define ZERO_PACKETS_AT_STARTUP 3
 
 
@@ -86,6 +86,7 @@ uint8_t data[8] = {PACKET_TYPE, PANEL_ID, '0', '0', '0', '0', '0', '\0'};
 uint8_t pseudo_data[8] = {PACKET_TYPE, PANEL_ID, '0', '0', '0', '0', '0', '\0'};
 bool buttons_enabled[BUTTONS_COUNT] = {true, true, true, true, true};
 uint8_t button_pins[BUTTONS_COUNT] = {RED_BUTTON_PIN, GREEN_BUTTON_PIN, BLUE_BUTTON_PIN, YELLOW_BUTTON_PIN, WHITE_BUTTON_PIN};
+uint8_t button_power_pins[BUTTONS_COUNT] = {RED_BUTTON_POWER_PIN, GREEN_BUTTON_POWER_PIN, BLUE_BUTTON_POWER_PIN, YELLOW_BUTTON_POWER_PIN, WHITE_BUTTON_POWER_PIN};
 uint32_t press_start_time[BUTTONS_COUNT] = {0, 0, 0, 0, 0};
 int buttons_current_state[BUTTONS_COUNT] = {HIGH, HIGH, HIGH, HIGH, HIGH};
 int buttons_last_state[BUTTONS_COUNT] = {HIGH, HIGH, HIGH, HIGH, HIGH};
@@ -122,6 +123,7 @@ void prepare_lora_packet(uint8_t * data);
 void handle_incoming_data();
 void init_buttons_power_pins();
 void display_other_panels_state_on_buttons();
+void update_total_RGB_values();
 
 void setup() {
   pinMode(RESET_PIN,INPUT_PULLUP);
@@ -135,6 +137,8 @@ void setup() {
   DEBUG_PRINTLN("Starting LoRa");
   if (!LoRa.begin(433E6)) {
     DEBUG_PRINTLN("Starting LoRa failed!");
+    delay(3000);
+    reset_func();    
     while (1);
   }
   for (int i = 0; i < ZERO_PACKETS_AT_STARTUP; i++) {
@@ -160,6 +164,14 @@ void loop() {
         prepare_lora_packet(data);
         lora_send_interval = LORA_INITIAL_SEND_INTERVAL;
         send_flag = true;
+        
+        panelsRGB[PANEL_ID - '0'][i] = 1;
+        dataTimestamps[PANEL_ID - '0'] = millis();    
+        
+        DEBUG_PRINT("Button ");
+        DEBUG_PRINT(i);
+        DEBUG_PRINTLN(": LOW");   
+        print_panels_table();   
         break;
 
       case RISING_EDGE:
@@ -170,6 +182,16 @@ void loop() {
         prepare_lora_packet(data);
         lora_send_interval = LORA_INITIAL_SEND_INTERVAL;        
         send_flag = true;
+        
+        panelsRGB[PANEL_ID - '0'][i] = 0;
+        print_panels_table();
+        dataTimestamps[PANEL_ID - '0'] = millis();
+                
+        DEBUG_PRINT("Button ");
+        DEBUG_PRINT(i);
+        DEBUG_PRINTLN(": HIGH");
+        print_panels_table();
+        
         break;
 
       case NO_EDGE:
@@ -206,19 +228,23 @@ void loop() {
   // check if LoRa has incoming data waiting to be read
   if (LoRa_isDataReady()) {
     handle_incoming_data();
+    print_panels_table();
   }
   // -- END: LORA RECEIVE -- 
-  reset_old_rows();           // clear panel row after buttons released
   update_total_RGB_values();  // clear the SUM row if any row was deleted in the previous line
+  reset_old_rows();           // clear panel row after buttons released
   display_other_panels_state_on_buttons();
 
   watchdog();
   delay(DEBOUNCE_DELAY);
 }
+// -------------------------- END: Main ---------------------------
+
 
 // -------------------------- functions ---------------------------
 void sendDataToLORA(uint8_t * data, size_t data_size) {
-  DEBUG_PRINTLN((char *)data);
+  // DEBUG_PRINT("Sending: ");
+  // DEBUG_PRINTLN((char *)data);
   LoRa.beginPacket();
   LoRa.write(data, data_size);
   LoRa.endPacket(true);
@@ -280,8 +306,8 @@ void prepare_lora_packet(uint8_t * data) {
       data[payload_indx] = '0';
       continue;
     }
-    
-    DEBUG_PRINTLN("button is LOW");
+    DEBUG_PRINT(curr_button);
+    DEBUG_PRINTLN(" button is LOW");
     data[payload_indx] = '1';
     continue;
   }
@@ -457,6 +483,12 @@ void init_buttons_power_pins() {
     digitalWrite(BLUE_BUTTON_POWER_PIN,HIGH);
     digitalWrite(YELLOW_BUTTON_POWER_PIN,HIGH);
     digitalWrite(WHITE_BUTTON_POWER_PIN,HIGH);
+    
+    DEBUG_PRINTLN("RED_BUTTON_POWER_PIN = HIGH");
+    DEBUG_PRINTLN("GREEN_BUTTON_POWER_PIN = HIGH");
+    DEBUG_PRINTLN("BLUE_BUTTON_POWER_PIN = HIGH");
+    DEBUG_PRINTLN("YELLOW_BUTTON_POWER_PIN = HIGH");
+    DEBUG_PRINTLN("WHITE_BUTTON_POWER_PIN = HIGH");
 }
 
 void display_other_panels_state_on_buttons() {
@@ -465,6 +497,17 @@ void display_other_panels_state_on_buttons() {
     digitalWrite(BLUE_BUTTON_POWER_PIN,panelsRGB[SUM_ROW][BLUE_COLUMN] == 0);
     digitalWrite(YELLOW_BUTTON_POWER_PIN,panelsRGB[SUM_ROW][YELLOW_COLUMN] == 0);
     digitalWrite(WHITE_BUTTON_POWER_PIN,panelsRGB[SUM_ROW][WHITE_COLUMN] == 0);
+
+    // DEBUG_PRINT("RED_BUTTON_POWER_PIN: ");
+    // DEBUG_PRINTLN(panelsRGB[SUM_ROW][RED_COLUMN] == 0);
+    // DEBUG_PRINT("GREEN_BUTTON_POWER_PIN: ");
+    // DEBUG_PRINTLN(panelsRGB[SUM_ROW][GREEN_COLUMN] == 0);
+    // DEBUG_PRINT("BLUE_BUTTON_POWER_PIN: ");
+    // DEBUG_PRINTLN(panelsRGB[SUM_ROW][BLUE_COLUMN] == 0);
+    // DEBUG_PRINT("YELLOW_BUTTON_POWER_PIN: ");
+    // DEBUG_PRINTLN(panelsRGB[SUM_ROW][YELLOW_COLUMN] == 0);
+    // DEBUG_PRINT("WHITE_BUTTON_POWER_PIN: ");
+    // DEBUG_PRINTLN(panelsRGB[SUM_ROW][WHITE_COLUMN] == 0);    
     return;
 }
 
