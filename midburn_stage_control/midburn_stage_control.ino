@@ -379,8 +379,8 @@ void idle_state()
 bool showSetupFlag = false;
 void show_setup() {
   ledControl(LED_SHOW);
-  // LoRa_send(LORA_MSG_SHOW, strlen(LORA_MSG_SHOW));
-  LoRa_send(LORA_MSG_SHOW, 4);
+  LoRa_send(LORA_MSG_SHOW, strlen(LORA_MSG_SHOW));
+  // LoRa_send(LORA_MSG_SHOW, 4);
   DEBUG_PRINTLN("show_setup()");
   showSetupFlag = true;
   showTime = 0;
@@ -1009,7 +1009,7 @@ void LoRa_read(char * buff) {
    int i = 0;
    while (LoRa.available()) {
       buff[i] = LoRa.read();
-      DEBUG_PRINT("current data: ");
+      DEBUG_PRINT("LORA current data: ");
       DEBUG_PRINTLN(buff[i]);
       i++;
    }
@@ -1036,7 +1036,7 @@ event_t parse_LoRa_msg(char* buff) {
     DEBUG_PRINTLN("");
     DEBUG_PRINTLN("new LoRa data");
     LoRa_read(buff);
-    // DEBUG_PRINTLN(incomingBuffer);
+    DEBUG_PRINTLN(buff);
     // parse LoRa message:
     msg_type = buff[0]-'0';
     DEBUG_PRINT("msg_type: ");
@@ -1059,7 +1059,7 @@ event_t parse_LoRa_msg(char* buff) {
 // parse buzzer event from lora received packet
 event_t parse_buzzer_data(char* buff) {
   // buzzer event -> stage
-  // msg = {TBB = Type B} Type=3
+  // msg = {TBB = Type Buzzer Buzzer} Type=3
   char buzzer_char1 = buff[1]-'0';
   char buzzer_char2 = buff[2]-'0';
   
