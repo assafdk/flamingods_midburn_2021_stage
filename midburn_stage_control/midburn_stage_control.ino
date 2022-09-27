@@ -170,9 +170,11 @@ void init_bt_buffer();
 #define LORA_SEND_EASTER_INTERVAL 1  // send SHOW to flamingo every 1 seconds
 
 char LoRa_buff[LORA_BUFF_SIZE] = {0};
+char LoRa_incoming_buff[LORA_BUFF_SIZE] = {0};
 void LoRa_send(char* buff,int len);
 void LoRa_read(char* buff,int len);
 bool LoRa_RecvFlag = false;
+void init_lora_incoming_buff();
 
 // --------------------------------
 
@@ -630,6 +632,7 @@ void transition_output(state_t prev_state, state_t cur_state, event_t event)
 // ----------- event translation -----------
 event_t getEvent() {
   char incomingByte;
+  event_t lora_buzzer_event;  
   
   // Button event:
   btnEvent = btnPushSense();
@@ -683,6 +686,13 @@ event_t getEvent() {
     return btnEvent;
   }
   
+  // Lora receive buzzer event
+  if (LoRa.available()) {
+    LoRa_read(LoRa_incoming_buff);
+    lora_buzzer_event = parse_LoRa_msg(LoRa_incoming_buff);
+    init_lora_incoming_buff();
+    return lora_buzzer_event;      
+      }   
   // None of the above events occured:
   return NO_EVENT;
 }
@@ -1015,6 +1025,67 @@ void LoRa_send(char* buff,int len)
   LoRa.beginPacket();
   LoRa.write(buff, len);
   LoRa.endPacket(true);
+  return;
+}
+
+event_t parse_LoRa_msg(char* buff) {
+    event_t buzzer_lora_event = NO_EVENT;
+    char msg_type;
+
+    // read incoming LoRa data into buffer:
+    DEBUG_PRINTLN("");
+    DEBUG_PRINTLN("new LoRa data");
+    LoRa_read(buff);
+    // DEBUG_PRINTLN(incomingBuffer);
+    // parse LoRa message:
+    msg_type = buff[0]-'0';
+    DEBUG_PRINT("msg_type: ");
+    DEBUG_PRINTLN(msg_type);
+    switch (msg_type) {
+      case 3: // buzzer -> stage
+              // msg = {TBB = Type Buzzer} Type=3
+        DEBUG_PRINT("MSG buzzer -> stage: ");
+        DEBUG_PRINTLN(buff);
+        buzzer_lora_event = parse_buzzer_data(buff); // parse and handle recieved buzzer data
+        break;
+      default:// very strange...
+      DEBUG_PRINTLN("No such message type");
+        break; 
+    }
+  return buzzer_lora_event;
+  }
+
+
+// parse buzzer event from lora received packet
+event_t parse_buzzer_data(char* buff) {
+  // buzzer event -> stage
+  // msg = {TBB = Type B} Type=3
+  char buzzer_char1 = buff[1]-'0';
+  char buzzer_char2 = buff[2]-'0';
+  
+  switch (buzzer_char1) {
+    case 'C':
+      return SINGLE_CLICK;
+    case 'D':
+      return DOUBLE_CLICK;
+    case 'L':
+      return LONG_PRESS;
+    case 'T':
+      if ('S' == buzzer_char2)
+        return SHORT_TAP;
+      if ('L' == buzzer_char2)
+        return LONG_TAP;
+      if ('C' == buzzer_char2)
+        return CONT_TAP;
+    default:
+      return NO_EVENT;
+  }           
+}
+
+void init_lora_incoming_buff() {
+  for (int i=0; i<LORA_BUFF_SIZE; i++) {    
+    LoRa_incoming_buff[i] = 0;
+  }
   return;
 }
 
