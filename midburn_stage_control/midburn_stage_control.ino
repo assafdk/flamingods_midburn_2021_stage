@@ -676,6 +676,7 @@ event_t getEvent() {
     bt_msg_ready = false;
     DEBUG_PRINTLN("parsing BT message");
     btnEvent = parse_BT_msg();
+    report_appliances_status();
   } 
   if (NO_EVENT != btnEvent) {
     DEBUG_PRINT("Bluetooth BUTTON EVENT: ");
