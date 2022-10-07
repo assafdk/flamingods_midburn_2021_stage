@@ -203,7 +203,7 @@ void back_flow() {
     // leds[i] = CRGB::Black;
     fadeToBlackBy(leds,NUM_LEDS,10);
     // Wait a little bit before we loop around and do it again
-//    delay(LED_DELAY);
+    delay(LED_DELAY);
   }
 
 void sawtooth() { 

@@ -4,7 +4,7 @@
 
 #define PANEL_ID '4'
 
-// #define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
   #define DEBUG_PRINT(x)  Serial.print (x)
@@ -20,17 +20,17 @@
 #define BUTTONS_COUNT 5
 
 /// COLOR PINS:
-#define RED_BUTTON_PIN 3
-#define GREEN_BUTTON_PIN 4
-#define BLUE_BUTTON_PIN 5
-#define YELLOW_BUTTON_PIN 6
-#define WHITE_BUTTON_PIN 7
+#define RED_BUTTON_PIN 7
+#define GREEN_BUTTON_PIN 5
+#define BLUE_BUTTON_PIN A0
+#define YELLOW_BUTTON_PIN A2
+#define WHITE_BUTTON_PIN 3
 
-#define RED_BUTTON_POWER_PIN    8
-#define GREEN_BUTTON_POWER_PIN  9
-#define BLUE_BUTTON_POWER_PIN   10
-#define YELLOW_BUTTON_POWER_PIN 11
-#define WHITE_BUTTON_POWER_PIN  12
+#define RED_BUTTON_POWER_PIN    6
+#define GREEN_BUTTON_POWER_PIN  4
+#define BLUE_BUTTON_POWER_PIN   A1
+#define YELLOW_BUTTON_POWER_PIN A3
+#define WHITE_BUTTON_POWER_PIN  A5
 
 #define SLEEP_TIME 10
 #define BUTTON_TIMEOUT 120000000 // 2 minutes
@@ -510,4 +510,3 @@ void display_other_panels_state_on_buttons() {
     // DEBUG_PRINTLN(panelsRGB[SUM_ROW][WHITE_COLUMN] == 0);    
     return;
 }
-

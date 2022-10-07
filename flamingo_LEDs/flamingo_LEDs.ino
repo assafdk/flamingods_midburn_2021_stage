@@ -305,6 +305,7 @@ void run_panel_LED_plan() {
     print_panels_table();
   }
   solid_color(green,red,blue);
+  //runway();
   return;
 }
 
@@ -313,9 +314,9 @@ void run_old_flamingo() {
     case LED_IDLE:
       EVERY_N_SECONDS( DEBUG_PRINT_DELAY ) { DEBUG_PRINTLN("LED_IDLE"); }
       // led_multiplan();
-      // runway();
+      ledPlan = back_flow;
       // flow();  
-      ledPlan = all_pink;   // change to pounding pink...   
+      //ledPlan = all_pink;   // change to pounding pink...   
       break;
     case LED_SHOW:
       EVERY_N_SECONDS( DEBUG_PRINT_DELAY ) { DEBUG_PRINTLN("LED_SHOW"); }
