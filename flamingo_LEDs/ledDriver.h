@@ -28,7 +28,7 @@ FASTLED_USING_NAMESPACE
 
 #define BRIGHTNESS          255
 #define FRAMES_PER_SECOND  120
-#define LED_DELAY          50
+#define LED_DELAY          0
 
 // function pointer type.
 // this will be used to choose an led operation function (such as rainbow) and pass it to led_run() for activation

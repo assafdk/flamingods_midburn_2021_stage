@@ -9,10 +9,13 @@ void setup() {
   while (!Serial);
   Serial.println("LoRa Receiver");
 
-  if (!LoRa.begin(433E6)) {
+  while (!LoRa.begin(433E6)) {
     Serial.println("Starting LoRa failed!");
-    while (1);
+    Serial.println("Retrying in a few seconds...");
+    delay(5000);
   }
+  Serial.println("LoRa finally started!");  
+  Serial.println("Setup Done");
 }
 
 void loop() {

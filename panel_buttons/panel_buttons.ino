@@ -2,7 +2,7 @@
 #include "Arduino.h"
 #include "LoRa.h"
 
-#define PANEL_ID '4'
+#define PANEL_ID '1'
 
 #define DEBUG
 
@@ -136,6 +136,8 @@ void setup() {
   last_send_time = 0;
   randomSeed(ID_SEED);
   Serial.begin(9600); // opens serial port, sets data rate to 9600 bps
+  DEBUG_PRINT("Panel ID = ");
+  DEBUG_PRINTLN(PANEL_ID);
   DEBUG_PRINTLN("Starting LoRa");
   if (!LoRa.begin(433E6)) {
     DEBUG_PRINTLN("Starting LoRa failed!");
@@ -150,6 +152,7 @@ void setup() {
   init_incoming_buffer();
   init_RGB_array();
   enable_all_panels();
+  DEBUG_PRINTLN("Setup Done");  
 }
 
 // -------------------------- main ---------------------------

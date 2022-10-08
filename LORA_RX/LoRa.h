@@ -1,6 +1,19 @@
 // Copyright (c) Sandeep Mistry. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+// UNO Pinout
+// MISO - 12
+// DIO - 2
+// SCK - 13
+// MOSI - 11
+// NSS - 10
+
+// MEGA Pinout
+// SCLK - 52
+// MOSI - 51
+// NSS - 10(?)
+
+
 #ifndef LORA_H
 #define LORA_H
 

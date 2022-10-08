@@ -101,6 +101,12 @@ void setup() {
   
   DEBUG_BEGIN(9600) // open the serial port at 9600 bps
   delay(300);
+  // while (!LoRa.begin(433E6)) {
+  //   Serial.println("Starting LoRa failed!");
+  //   Serial.println("Retrying in a few seconds...");
+  //   delay(5000);
+  // }
+  // Serial.println("LoRa finally started!");  
   LoRa.begin(433E6);
   DEBUG_PRINTLN("DEBUG MODE");
   // put your setup code here, to run once:
@@ -112,6 +118,7 @@ void setup() {
   init_RGB_array();
   enable_all_panels();
 
+  Serial.println("Setup Done");  
     //debug
   // TPRGBYW
   // incomingBuffer[0] = '0';  // T 
@@ -314,7 +321,7 @@ void run_old_flamingo() {
     case LED_IDLE:
       EVERY_N_SECONDS( DEBUG_PRINT_DELAY ) { DEBUG_PRINTLN("LED_IDLE"); }
       // led_multiplan();
-      ledPlan = back_flow;
+      ledPlan = rainbow;
       // flow();  
       //ledPlan = all_pink;   // change to pounding pink...   
       break;
