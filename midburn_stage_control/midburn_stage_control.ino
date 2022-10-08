@@ -377,8 +377,8 @@ void idle_state()
 bool showSetupFlag = false;
 void show_setup() {
   ledControl(LED_SHOW);
-  // LoRa_send(LORA_MSG_SHOW, strlen(LORA_MSG_SHOW));
-  LoRa_send(LORA_MSG_SHOW, 4);
+  LoRa_send(LORA_MSG_SHOW, strlen(LORA_MSG_SHOW));
+  // LoRa_send(LORA_MSG_SHOW, 4);
   DEBUG_PRINTLN("show_setup()");
   showSetupFlag = true;
   showTime = 0;
