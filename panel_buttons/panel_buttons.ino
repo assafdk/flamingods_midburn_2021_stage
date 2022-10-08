@@ -14,17 +14,17 @@
   #define DEBUG_PRINTLN(x)
 #endif
 
-#define DEBOUNCE_DELAY 0
-#define RESET_PIN A5
+#define DEBOUNCE_DELAY 5
+// #define RESET_PIN 
 
 #define BUTTONS_COUNT 5
 
 /// COLOR PINS:
-#define RED_BUTTON_PIN 7
-#define GREEN_BUTTON_PIN 5
-#define BLUE_BUTTON_PIN A0
+#define RED_BUTTON_PIN    7
+#define GREEN_BUTTON_PIN  5
+#define BLUE_BUTTON_PIN   A0
 #define YELLOW_BUTTON_PIN A2
-#define WHITE_BUTTON_PIN 3
+#define WHITE_BUTTON_PIN  3
 
 #define RED_BUTTON_POWER_PIN    6
 #define GREEN_BUTTON_POWER_PIN  4
@@ -82,8 +82,8 @@ typedef enum {
   NO_EDGE
 } edge_t;
 
-uint8_t data[8] = {PACKET_TYPE, PANEL_ID, '0', '0', '0', '0', '0', '\0'};
-uint8_t pseudo_data[8] = {PACKET_TYPE, PANEL_ID, '0', '0', '0', '0', '0', '\0'};
+uint8_t data[8];
+uint8_t pseudo_data[8] = {PACKET_TYPE, PANEL_ID, '0', '1', '0', '0', '0', '\0'};
 bool buttons_enabled[BUTTONS_COUNT] = {true, true, true, true, true};
 uint8_t button_pins[BUTTONS_COUNT] = {RED_BUTTON_PIN, GREEN_BUTTON_PIN, BLUE_BUTTON_PIN, YELLOW_BUTTON_PIN, WHITE_BUTTON_PIN};
 uint8_t button_power_pins[BUTTONS_COUNT] = {RED_BUTTON_POWER_PIN, GREEN_BUTTON_POWER_PIN, BLUE_BUTTON_POWER_PIN, YELLOW_BUTTON_POWER_PIN, WHITE_BUTTON_POWER_PIN};
@@ -124,10 +124,12 @@ void handle_incoming_data();
 void init_buttons_power_pins();
 void display_other_panels_state_on_buttons();
 void update_total_RGB_values();
+void init_lora_out_buff();
 
 void setup() {
-  pinMode(RESET_PIN,INPUT_PULLUP);
-  digitalWrite(RESET_PIN,HIGH);
+  init_lora_out_buff();
+  // pinMode(RESET_PIN,INPUT_PULLUP);
+  // digitalWrite(RESET_PIN,HIGH);
   init_push_buttons();
   init_buttons_power_pins();
   lora_send_interval = LORA_MAX_SEND_INTERVAL + 1;
@@ -184,13 +186,13 @@ void loop() {
         send_flag = true;
         
         panelsRGB[PANEL_ID - '0'][i] = 0;
-        print_panels_table();
+        // print_panels_table();
         dataTimestamps[PANEL_ID - '0'] = millis();
                 
         DEBUG_PRINT("Button ");
         DEBUG_PRINT(i);
         DEBUG_PRINTLN(": HIGH");
-        print_panels_table();
+        // print_panels_table();
         
         break;
 
@@ -243,8 +245,8 @@ void loop() {
 
 // -------------------------- functions ---------------------------
 void sendDataToLORA(uint8_t * data, size_t data_size) {
-  // DEBUG_PRINT("Sending: ");
-  // DEBUG_PRINTLN((char *)data);
+  DEBUG_PRINT("Sending: ");
+  DEBUG_PRINTLN((char *)data);
   LoRa.beginPacket();
   LoRa.write(data, data_size);
   LoRa.endPacket(true);
@@ -257,9 +259,11 @@ edge_t detect_button_edge(int button) {
     buttons_last_state[button] = buttons_current_state[button];
     // edge detecded
     if (LOW == buttons_current_state[button]) {
+      DEBUG_PRINT("BUTTON PRESSED!");
       return FALLING_EDGE;
     }
     if (HIGH == buttons_current_state[button]) {
+      DEBUG_PRINT("BUTTON RELEASED!");
       return RISING_EDGE;
     }
   }
@@ -304,12 +308,13 @@ void prepare_lora_packet(uint8_t * data) {
       DEBUG_PRINT(curr_button);
       DEBUG_PRINTLN(" button is HIGH");
       data[payload_indx] = '0';
-      continue;
     }
-    DEBUG_PRINT(curr_button);
-    DEBUG_PRINTLN(" button is LOW");
-    data[payload_indx] = '1';
-    continue;
+    else
+    {
+      DEBUG_PRINT(curr_button);
+      DEBUG_PRINTLN(" button is LOW");
+      data[payload_indx] = '1';
+    }
   }
   return;
 }
@@ -351,11 +356,11 @@ int parse_panel_data(char* incomingBuffer) {
   }
   if (dataTime > dataTimestamps[panel] + COM_COOLING_TIME) {
     dataTimestamps[panel] = dataTime;
-    panelsRGB[panel][RED_COLUMN]    = (int)(incomingBuffer[2]-'0');
-    panelsRGB[panel][GREEN_COLUMN]  = (int)(incomingBuffer[3]-'0');
-    panelsRGB[panel][BLUE_COLUMN]   = (int)(incomingBuffer[4]-'0');
-    panelsRGB[panel][YELLOW_COLUMN] = (int)(incomingBuffer[5]-'0');
-    panelsRGB[panel][WHITE_COLUMN]  = (int)(incomingBuffer[6]-'0');
+    panelsRGB[panel][RED_COLUMN]    = (uint8_t)(incomingBuffer[2]-'0');
+    panelsRGB[panel][GREEN_COLUMN]  = (uint8_t)(incomingBuffer[3]-'0');
+    panelsRGB[panel][BLUE_COLUMN]   = (uint8_t)(incomingBuffer[4]-'0');
+    panelsRGB[panel][YELLOW_COLUMN] = (uint8_t)(incomingBuffer[5]-'0');
+    panelsRGB[panel][WHITE_COLUMN]  = (uint8_t)(incomingBuffer[6]-'0');
     return 0;
   }
   return 1;
@@ -364,7 +369,7 @@ int parse_panel_data(char* incomingBuffer) {
 // calculates the sum of values on each color row
 // to find out how many buttons are pressed per color
 void update_total_RGB_values() {
-  int sum = 0;
+  uint8_t sum = 0;
   for (int col=0; col<COLORS_COUNT; col++){
     for (int pan=0; pan<PANELS_COUNT; pan++)
       sum += panelsRGB[pan][col];
@@ -403,6 +408,12 @@ void print_panels_table() {
     }
     DEBUG_PRINTLN("");
   }
+
+  DEBUG_PRINT("buttons_current_state: ");
+  for (int i=0; i<COLORS_COUNT; i++) {
+    DEBUG_PRINT(buttons_current_state[i]);
+    DEBUG_PRINT(" ");
+    }
   return;   
 }
 
@@ -509,4 +520,17 @@ void display_other_panels_state_on_buttons() {
     // DEBUG_PRINT("WHITE_BUTTON_POWER_PIN: ");
     // DEBUG_PRINTLN(panelsRGB[SUM_ROW][WHITE_COLUMN] == 0);    
     return;
+}
+
+void init_lora_out_buff() {
+  data[0] = PACKET_TYPE;
+  data[1] = PANEL_ID;
+  data[2] = '0';
+  data[3] = '0';
+  data[4] = '0';
+  data[5] = '0';
+  data[6] = '0';
+  data[7] = 0;
+  
+  return;
 }

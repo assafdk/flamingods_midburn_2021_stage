@@ -168,8 +168,8 @@ void loop() {
       DEBUG_PRINTLN("No such message type");
         break; 
     }
-  init_incoming_buffer();    
-  }
+    init_incoming_buffer();    
+  } 
   reset_old_rows();           // clear panel row after buttons released
   update_total_RGB_values();  // to clear the SUM row if any row was deleted in the previous line
   
@@ -356,6 +356,7 @@ void jumper_polling() {
   if (LOW == jumperState)
     // Somewone just connected the jumper
     // ignore all panels
+    DEBUG_PRINTLN("Jumper connected - ignoring all panels");
     disable_all_panels();
 
   if (HIGH == jumperState)
