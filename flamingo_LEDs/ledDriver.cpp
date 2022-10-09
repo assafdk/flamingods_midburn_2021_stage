@@ -267,9 +267,10 @@ DEBUG_PRINTLN("all_pink()");
 //fill_solid( leds, NUM_LEDS, CRGB(255,20,147));
 //fill_solid( leds, NUM_LEDS, CRGB(146,255,20));
 //fill_solid( leds, NUM_LEDS, CRGB(105,255,180));
-//fill_solid( leds, NUM_LEDS, CRGB(50,255,0)); // Pink Barbie
+// fill_solid( leds, NUM_LEDS, CRGB(50,255,0)); // Pink Barbie
 //fill_solid( leds, NUM_LEDS, CRGB(25,255,0)); // Pink Flamingo (Magenta)
-fill_solid( leds, NUM_LEDS, CRGB(25,255,10)); // Pink Dima
+// fill_solid( leds, NUM_LEDS, CRGB(25,255,10)); // Pink Dima WRONG PALLETTE
+fill_solid( leds, NUM_LEDS, CRGB(10,255,25)); // Pink Dima
 //fill_solid( leds, NUM_LEDS, CRGB(50,218,24)); // Purple
 //fill_solid( leds, NUM_LEDS, CRGB(20,255,110)); // Purple 
 

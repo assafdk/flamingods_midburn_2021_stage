@@ -2,7 +2,7 @@
 #include "Arduino.h"
 #include "LoRa.h"
 
-#define PANEL_ID '1'
+#define PANEL_ID '4'
 
 #define DEBUG
 
@@ -20,16 +20,16 @@
 #define BUTTONS_COUNT 5
 
 /// COLOR PINS:
-#define RED_BUTTON_PIN    7
-#define GREEN_BUTTON_PIN  5
-#define BLUE_BUTTON_PIN   A0
-#define YELLOW_BUTTON_PIN A2
-#define WHITE_BUTTON_PIN  3
+#define RED_BUTTON_PIN    7   // Red wire
+#define GREEN_BUTTON_PIN  5   // Green wire
+#define BLUE_BUTTON_PIN   A1  // Blue wire
+#define YELLOW_BUTTON_PIN A3  // Yellow wire
+#define WHITE_BUTTON_PIN  3   // White wire
 
 #define RED_BUTTON_POWER_PIN    6
 #define GREEN_BUTTON_POWER_PIN  4
-#define BLUE_BUTTON_POWER_PIN   A1
-#define YELLOW_BUTTON_POWER_PIN A3
+#define BLUE_BUTTON_POWER_PIN   A2
+#define YELLOW_BUTTON_POWER_PIN A4
 #define WHITE_BUTTON_POWER_PIN  A5
 
 #define SLEEP_TIME 10
@@ -145,6 +145,8 @@ void setup() {
     reset_func();    
     while (1);
   }
+  LoRa.setSpreadingFactor(10);  
+  LoRa.setSignalBandwidth(62.5E3);    
   for (int i = 0; i < ZERO_PACKETS_AT_STARTUP; i++) {
     sendDataToLORA(data, PACKET_SIZE);
     delay(5);

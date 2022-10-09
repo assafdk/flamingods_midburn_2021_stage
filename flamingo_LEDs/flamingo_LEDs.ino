@@ -108,6 +108,9 @@ void setup() {
   // }
   // Serial.println("LoRa finally started!");  
   LoRa.begin(433E6);
+  delay(500);
+  LoRa.setSpreadingFactor(10);
+  LoRa.setSignalBandwidth(62.5E3);
   DEBUG_PRINTLN("DEBUG MODE");
   // put your setup code here, to run once:
   ledState = LED_IDLE;
@@ -321,9 +324,9 @@ void run_old_flamingo() {
     case LED_IDLE:
       EVERY_N_SECONDS( DEBUG_PRINT_DELAY ) { DEBUG_PRINTLN("LED_IDLE"); }
       // led_multiplan();
-      ledPlan = rainbow;
-      // flow();  
-      //ledPlan = all_pink;   // change to pounding pink...   
+      // ledPlan = rainbow;
+      ledPlan = flow;
+      // ledPlan = all_pink;   // change to pounding pink...   
       break;
     case LED_SHOW:
       EVERY_N_SECONDS( DEBUG_PRINT_DELAY ) { DEBUG_PRINTLN("LED_SHOW"); }

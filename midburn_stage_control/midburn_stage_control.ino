@@ -238,9 +238,11 @@ void setup() {
   BluetoothSerial.begin(BT_BAUD_RATE);
   delay(500);
   init_bt_buffer();  
-  LoRa.setPins(LORA_SS_PIN,LORA_RESET_PIN,LORA_DIO0_PIN);
+  LoRa.setPins(LORA_SS_PIN,LORA_RESET_PIN,LORA_DIO0_PIN);  
   LoRa.begin(433E6);
   delay(500);
+  LoRa.setSpreadingFactor(10);
+  LoRa.setSignalBandwidth(62.5E3);
   DEBUG_PRINTLN("DEBUG MODE");
   
   setupLedCom(); // I2C or direct
