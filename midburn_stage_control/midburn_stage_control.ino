@@ -1,4 +1,4 @@
-#define DEBUG
+// #define DEBUG
 #define I2C
 #include <Arduino.h>
 #include <FastLED.h>
@@ -241,8 +241,10 @@ void setup() {
   LoRa.setPins(LORA_SS_PIN,LORA_RESET_PIN,LORA_DIO0_PIN);  
   LoRa.begin(433E6);
   delay(500);
-  LoRa.setSpreadingFactor(10);
-  LoRa.setSignalBandwidth(62.5E3);
+  
+  LoRa.setSignalBandwidth(125E3);
+  LoRa.enableCrc();  
+  LoRa.setSpreadingFactor(11);
   DEBUG_PRINTLN("DEBUG MODE");
   
   setupLedCom(); // I2C or direct
